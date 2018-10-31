@@ -17,13 +17,9 @@ var slog *log.Logger
 var slog2 *log.Logger
 
 func F(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Output to STDOUT")
-	log.Println("Output to STDERR")
-
 	defer func() {
 		r := recover()
-		fmt.Println("recovered")
-		fmt.Println(r)
+		fmt.Println("recovered: ", r)
 	}()
 
 	o.Do(func() {
@@ -41,4 +37,5 @@ func F(w http.ResponseWriter, r *http.Request) {
 	slog2.Println("Stackdriver logging error?")
 	slog.Panicln("Stackdriver logging panic")
 
+	logger.Flush()
 }
