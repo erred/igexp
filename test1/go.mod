@@ -2,6 +2,7 @@ module test1
 
 require (
 	cloud.google.com/go v0.31.0
+	github.com/google/martian v2.1.0+incompatible // indirect
 	github.com/googleapis/gax-go v2.0.0+incompatible // indirect
 	go.opencensus.io v0.18.0 // indirect
 	golang.org/x/net v0.0.0-20181029044818-c44066c5c816 // indirect

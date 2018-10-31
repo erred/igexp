@@ -11,7 +11,7 @@ import (
 	"cloud.google.com/go/logging"
 )
 
-var o = sync.Once
+var o sync.Once
 var logger *logging.Logger
 var slog *log.Logger
 var slog2 *log.Logger
