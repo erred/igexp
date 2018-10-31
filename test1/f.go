@@ -28,11 +28,11 @@ func F(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 		}
 
-		logger = client.Logger("functions-test1-id")
+		logger = client.Logger(os.Getenv("FUNCTION_NAME"))
 		slog = logger.StandardLogger(logging.Info)
 		slog2 = logger.StandardLogger(logging.Error)
 	})
-
+	logger.Log(logging.Entry{Payload: "something happened!"})
 	slog.Println("Stackdriver logging print")
 	slog2.Println("Stackdriver logging error?")
 	slog.Panicln("Stackdriver logging panic")
