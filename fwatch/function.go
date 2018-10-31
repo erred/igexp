@@ -21,7 +21,7 @@ var (
 	// names of environment variables
 	envBucket  = "BUCKET"
 	envPass    = "PASS"
-	envProject = "PROJECT-ID"
+	envProject = "PROJECTID"
 	envUser    = "USER"
 
 	// names of storage objects
