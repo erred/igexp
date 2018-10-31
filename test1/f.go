@@ -1,17 +1,11 @@
 package test1
 
 import (
-	"log"
 	"net/http"
-	"net/http/httputil"
+	"os"
+	"strings"
 )
 
 func F(w http.ResponseWriter, r *http.Request) {
-	b, err := httputil.DumpRequest(r, true)
-	if err != nil {
-		log.Println(err)
-		w.Write([]byte(err.Error()))
-		return
-	}
-	w.Write(b)
+	w.Write([]byte(strings.Join(os.Environ(), "\n")))
 }
