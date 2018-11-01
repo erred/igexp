@@ -3,7 +3,7 @@ package test1
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"sync"
@@ -16,9 +16,11 @@ var bucket *storage.BucketHandle
 
 func F(w http.ResponseWriter, r *http.Request) {
 	defer func() {
-		r := recover()
-		log.Printf("function panicked, recovered with: %v", r)
+		if r := recover(); r != nil {
+			log.Printf("function panicked, recovered with: %v", r)
+		}
 	}()
+
 	o.Do(func() {
 		store, err := storage.NewClient(context.Background())
 		if err != nil {
@@ -28,40 +30,27 @@ func F(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Connected to bucket")
 	})
 
-	w.Write([]byte("\nRead object:\n"))
-
-	re, err := bucket.Object("test-object").NewReader(context.Background())
+	re, err := bucket.Object("nested/test-object").NewReader(context.Background())
 	if err != nil {
-		log.Println("Error creating NewReader: ", err)
+		log.Println("Read nested object: ", err)
 	}
 	defer re.Close()
-	b, err := ioutil.ReadAll(re)
+	_, err = io.Copy(w, re)
 	if err != nil {
-		log.Println("Error ReadAll", err)
+		log.Println("Copy nested object: ", err)
 	}
-	fmt.Println("Read test-object: ", b)
+	//
+	w.Write([]byte("\nRead non-existent object:\n"))
 
-	// w.Write([]byte("\nRead nested object:\n"))
-	//
-	// re, err = bucket.Object("nested/test-object").NewReader(context.Background())
-	// if err != nil {
-	// 	log.Println(err)
-	// }
-	// defer re.Close()
-	// _, err = io.Copy(w, re)
-	// if err != nil {
-	// 	log.Println(err)
-	// }
-	//
-	// w.Write([]byte("\nRead non-existent object:\n"))
-	//
-	// re, err = bucket.Object("non-existent-object").NewReader(context.Background())
-	// if err != nil {
-	// 	log.Println(err)
-	// }
-	// defer re.Close()
-	// _, err = io.Copy(w, re)
-	// if err != nil {
-	// 	log.Println(err)
-	// }
+	re, err = bucket.Object("non-existent-object").NewReader(context.Background())
+	if err != nil {
+		log.Println("Read non existent object: ", err)
+	} else {
+		defer re.Close()
+		_, err = io.Copy(w, re)
+		if err != nil {
+			log.Println("Copy non existent object: ", err)
+		}
+
+	}
 }
