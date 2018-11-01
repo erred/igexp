@@ -13,4 +13,4 @@ require (
 	igtools/goinsta v0.0.0
 )
 
-replace igtools/goinsta => ../goinsta
+// replace igtools/goinsta => ../goinsta

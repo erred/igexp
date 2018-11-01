@@ -74,10 +74,10 @@ func Fwatch(ctx context.Context, msg struct{}) error {
 
 	if err := f.update(); err != nil {
 		log.Printf("Update failed: %v", err)
-	}
-
-	if err := f.save(); err != nil {
-		log.Printf("Save failed: %v", err)
+	} else {
+		if err := f.save(); err != nil {
+			log.Printf("Save failed: %v", err)
+		}
 	}
 
 	return nil
