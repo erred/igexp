@@ -3,9 +3,7 @@ package test1
 import (
 	"context"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"sync"
 
 	"cloud.google.com/go/storage"
@@ -14,7 +12,7 @@ import (
 var o sync.Once
 var bucket *storage.BucketHandle
 
-func F(w http.ResponseWriter, r *http.Request) {
+func F(ctx context.Context, data struct{}) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("function panicked, recovered with: %v", r)
@@ -30,27 +28,12 @@ func F(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Connected to bucket")
 	})
 
-	re, err := bucket.Object("nested/test-object").NewReader(context.Background())
-	if err != nil {
-		log.Println("Read nested object: ", err)
-	}
-	defer re.Close()
-	_, err = io.Copy(w, re)
-	if err != nil {
-		log.Println("Copy nested object: ", err)
-	}
-	//
-	w.Write([]byte("\nRead non-existent object:\n"))
+	obj := bucket.Object("ps-test")
 
-	re, err = bucket.Object("non-existent-object").NewReader(context.Background())
+	w := obj.NewWriter(ctx)
+	defer w.Close()
+	_, err := w.Write([]byte("pubsub test success!"))
 	if err != nil {
-		log.Println("Read non existent object: ", err)
-	} else {
-		defer re.Close()
-		_, err = io.Copy(w, re)
-		if err != nil {
-			log.Println("Copy non existent object: ", err)
-		}
-
+		log.Println("write error: ", err)
 	}
 }
