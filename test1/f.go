@@ -12,7 +12,7 @@ import (
 var o sync.Once
 var bucket *storage.BucketHandle
 
-func F(ctx context.Context, data struct{}) {
+func F(ctx context.Context, data struct{}) error {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("function panicked, recovered with: %v", r)
@@ -36,4 +36,5 @@ func F(ctx context.Context, data struct{}) {
 	if err != nil {
 		log.Println("write error: ", err)
 	}
+	return nil
 }
