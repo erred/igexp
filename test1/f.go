@@ -14,6 +14,10 @@ var o sync.Once
 var bucket *storage.BucketHandle
 
 func F(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		r := recover()
+		log.Printf("function panicked, recovered with: %v", r)
+	}()
 	o.Do(func() {
 
 		store, err := storage.NewClient(context.Background())
@@ -23,21 +27,7 @@ func F(w http.ResponseWriter, r *http.Request) {
 		bucket = store.Bucket("igtools-storage")
 	})
 
-	obj := bucket.Object("test-object").NewWriter(context.Background())
-	defer obj.Close()
-	_, err := obj.Write([]byte("hello world\n"))
-	if err != nil {
-		log.Println(err)
-	}
-
-	obj = bucket.Object("nested/test-object").NewWriter(context.Background())
-	defer obj.Close()
-	_, err = obj.Write([]byte("hello nested world\n"))
-	if err != nil {
-		log.Println(err)
-	}
-
-	w.Write([]byte("Read object:\n"))
+	w.Write([]byte("\nRead object:\n"))
 
 	re, err := bucket.Object("test-object").NewReader(context.Background())
 	if err != nil {
@@ -49,7 +39,7 @@ func F(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	w.Write([]byte("Read nested object:\n"))
+	w.Write([]byte("\nRead nested object:\n"))
 
 	re, err = bucket.Object("nested/test-object").NewReader(context.Background())
 	if err != nil {
@@ -60,16 +50,16 @@ func F(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-
-	w.Write([]byte("Read non-existent object:\n"))
-
-	re, err = bucket.Object("non-existent-object").NewReader(context.Background())
-	if err != nil {
-		log.Println(err)
-	}
-	defer re.Close()
-	_, err = io.Copy(w, re)
-	if err != nil {
-		log.Println(err)
-	}
+	//
+	// w.Write([]byte("\nRead non-existent object:\n"))
+	//
+	// re, err = bucket.Object("non-existent-object").NewReader(context.Background())
+	// if err != nil {
+	// 	log.Println(err)
+	// }
+	// defer re.Close()
+	// _, err = io.Copy(w, re)
+	// if err != nil {
+	// 	log.Println(err)
+	// }
 }
