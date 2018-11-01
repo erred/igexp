@@ -1,1 +1,1 @@
-module igtools/goinsta
+module github.com/seankhliao/igtools/goinsta

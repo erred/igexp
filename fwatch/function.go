@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"igtools/goinsta"
+	"github.com/seankhliao/igtools/goinsta"
 
 	"cloud.google.com/go/storage"
 )
