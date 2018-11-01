@@ -2,7 +2,8 @@ package test1
 
 import (
 	"context"
-	"io"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"sync"
@@ -19,37 +20,38 @@ func F(w http.ResponseWriter, r *http.Request) {
 		log.Printf("function panicked, recovered with: %v", r)
 	}()
 	o.Do(func() {
-
 		store, err := storage.NewClient(context.Background())
 		if err != nil {
 			log.Println(err)
 		}
 		bucket = store.Bucket("igtools-storage")
+		fmt.Println("Connected to bucket")
 	})
 
 	w.Write([]byte("\nRead object:\n"))
 
 	re, err := bucket.Object("test-object").NewReader(context.Background())
 	if err != nil {
-		log.Println(err)
+		log.Println("Error creating NewReader: ", err)
 	}
 	defer re.Close()
-	_, err = io.Copy(w, re)
+	b, err := ioutil.ReadAll(re)
 	if err != nil {
-		log.Println(err)
+		log.Println("Error ReadAll", err)
 	}
+	fmt.Println("Read test-object: ", b)
 
-	w.Write([]byte("\nRead nested object:\n"))
-
-	re, err = bucket.Object("nested/test-object").NewReader(context.Background())
-	if err != nil {
-		log.Println(err)
-	}
-	defer re.Close()
-	_, err = io.Copy(w, re)
-	if err != nil {
-		log.Println(err)
-	}
+	// w.Write([]byte("\nRead nested object:\n"))
+	//
+	// re, err = bucket.Object("nested/test-object").NewReader(context.Background())
+	// if err != nil {
+	// 	log.Println(err)
+	// }
+	// defer re.Close()
+	// _, err = io.Copy(w, re)
+	// if err != nil {
+	// 	log.Println(err)
+	// }
 	//
 	// w.Write([]byte("\nRead non-existent object:\n"))
 	//
