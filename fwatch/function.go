@@ -11,7 +11,6 @@ import (
 
 	"igtools/goinsta"
 
-	"cloud.google.com/go/logging"
 	"cloud.google.com/go/storage"
 )
 
@@ -21,18 +20,16 @@ var (
 	// names of environment variables
 	envBucket  = "BUCKET"
 	envPass    = "PASS"
-	envProject = "PROJECTID"
+	envProject = "GCP_PROJECT"
 	envUser    = "USER"
 
 	// names of storage objects
 	objEvents    = "fwatch/events.json"
 	objFollowers = "fwatch/followers.json"
 	objFollowing = "fwatch/following.json"
-	objLog       = "igtools/fwatch"
 )
 
 type client struct {
-	lg     *log.Logger
 	bucket *storage.BucketHandle
 	ig     *goinsta.Instagram
 	once   sync.Once
@@ -42,18 +39,11 @@ func (cl *client) Login() {
 	var err error
 	ctx := context.Background()
 
-	// logging
-	lc, err := logging.NewClient(ctx, envProject)
-	if err != nil {
-		log.Printf("Login Error: stackdriver logging failed: %v", err)
-	}
-	cl.lg = lc.Logger(objLog).StandardLogger(logging.Info)
-
 	// storage
 	store, err := storage.NewClient(ctx)
 	if err != nil {
 		log.Printf("Login Error: cloud storage failed: %v", err)
-		cl.lg.Printf("Login Error: cloud storage failed: %v", err)
+		panic(err)
 	}
 	cl.bucket = store.Bucket(envBucket)
 
@@ -61,7 +51,6 @@ func (cl *client) Login() {
 	cl.ig = goinsta.New(os.Getenv(envUser), os.Getenv(envPass))
 	if err := cl.ig.Login(); err != nil {
 		log.Printf("Login Error: goinsta failed: %v", err)
-		cl.lg.Printf("Login Error: goinsta failed: %v", err)
 		panic(err)
 	}
 }
@@ -69,9 +58,9 @@ func (cl *client) Login() {
 // Fwatch is the entrypoint and pubsub handler
 func Fwatch(ctx context.Context, msg struct{}) error {
 	defer func() {
-		r := recover()
-		log.Println(r)
-		c.lg.Println(r)
+		if r := recover(); r != nil {
+			log.Println("panic: ", r)
+		}
 	}()
 
 	// ensure login
@@ -81,17 +70,14 @@ func Fwatch(ctx context.Context, msg struct{}) error {
 
 	if err := f.restore(); err != nil {
 		log.Printf("Restore failed: %v", err)
-		c.lg.Printf("Restore failed: %v", err)
 	}
 
 	if err := f.update(); err != nil {
 		log.Printf("Update failed: %v", err)
-		c.lg.Printf("Update failed: %v", err)
 	}
 
 	if err := f.save(); err != nil {
 		log.Printf("Save failed: %v", err)
-		c.lg.Printf("Save failed: %v", err)
 	}
 
 	return nil
@@ -185,21 +171,18 @@ func (f *follow) save() error {
 	defer w.Close()
 	if err := json.NewEncoder(w).Encode(f.Events); err != nil {
 		log.Printf("Saving %v failed: %v", objEvents, err)
-		c.lg.Printf("Saving %v failed: %v", objEvents, err)
 	}
 
 	w = c.bucket.Object(objFollowers).NewWriter(ctx)
 	defer w.Close()
 	if err := json.NewEncoder(w).Encode(f.Followers); err != nil {
 		log.Printf("Saving %v failed: %v", objFollowers, err)
-		c.lg.Printf("Saving %v failed: %v", objFollowers, err)
 	}
 
 	w = c.bucket.Object(objFollowing).NewWriter(ctx)
 	defer w.Close()
 	if err := json.NewEncoder(w).Encode(f.Following); err != nil {
 		log.Printf("Saving %v failed: %v", objFollowing, err)
-		c.lg.Printf("Saving %v failed: %v", objFollowing, err)
 	}
 
 	return nil

@@ -39,7 +39,7 @@ golang.org/x/net/http2
 golang.org/x/net/http2/hpack
 golang.org/x/net/http/httpguts
 golang.org/x/net/idna
-# golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be
+# golang.org/x/oauth2 v0.0.0-20181031022657-8527f56f7107
 golang.org/x/oauth2
 golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
@@ -52,7 +52,7 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 golang.org/x/text/transform
-# google.golang.org/api v0.0.0-20181030000543-1d582fd0359e
+# google.golang.org/api v0.0.0-20181030195507-c4edf6535eee
 google.golang.org/api/googleapi
 google.golang.org/api/iterator
 google.golang.org/api/option
@@ -106,3 +106,5 @@ google.golang.org/grpc/resolver/passthrough
 google.golang.org/grpc/stats
 google.golang.org/grpc/tap
 google.golang.org/grpc/balancer/base
+# igtools/goinsta v0.0.0 => ../goinsta
+igtools/goinsta
