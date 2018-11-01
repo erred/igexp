@@ -1,38 +1,75 @@
-package function
+package test1
 
-// package test1
-//
-// import (
-// 	"context"
-// 	"log"
-// 	"net/http"
-// 	"os"
-// 	"sync"
-//
-// 	"cloud.google.com/go/logging"
-// )
-//
-// var o sync.Once
-// var logger *logging.Logger
-// var slog *log.Logger
-// var slog2 *log.Logger
-//
-// func F(w http.ResponseWriter, r *http.Request) {
-// 	o.Do(func() {
-// 		client, err := logging.NewClient(context.Background(), os.Getenv("GCP_PROJECT"))
-// 		if err != nil {
-// 			log.Println(err)
-// 		}
-//
-// 		logger = client.Logger(os.Getenv("FUNCTION_NAME"))
-// 		slog = logger.StandardLogger(logging.Info)
-// 		slog2 = logger.StandardLogger(logging.Error)
-// 	})
-// 	slog.Println("Stackdriver logging print")
-// 	slog2.Println("Stackdriver logging error?")
-// 	err := logger.LogSync(context.Background(), logging.Entry{Payload: "something happened!"})
-// 	if err != nil {
-// 		log.Println(err)
-// 	}
-// 	logger.Flush()
-// }
+import (
+	"context"
+	"io"
+	"log"
+	"net/http"
+	"sync"
+
+	"cloud.google.com/go/storage"
+)
+
+var o sync.Once
+var bucket *storage.BucketHandle
+
+func F(w http.ResponseWriter, r *http.Request) {
+	o.Do(func() {
+
+		store, err := storage.NewClient(context.Background())
+		if err != nil {
+			log.Println(err)
+		}
+		bucket = store.Bucket("igtools-storage")
+	})
+
+	obj := bucket.Object("test-object").NewWriter(context.Background())
+	defer obj.Close()
+	_, err := obj.Write([]byte("hello world\n"))
+	if err != nil {
+		log.Println(err)
+	}
+
+	obj = bucket.Object("nested/test-object").NewWriter(context.Background())
+	defer obj.Close()
+	_, err = obj.Write([]byte("hello nested world\n"))
+	if err != nil {
+		log.Println(err)
+	}
+
+	w.Write([]byte("Read object:\n"))
+
+	re, err := bucket.Object("test-object").NewReader(context.Background())
+	if err != nil {
+		log.Println(err)
+	}
+	defer re.Close()
+	_, err = io.Copy(w, re)
+	if err != nil {
+		log.Println(err)
+	}
+
+	w.Write([]byte("Read nested object:\n"))
+
+	re, err = bucket.Object("nested/test-object").NewReader(context.Background())
+	if err != nil {
+		log.Println(err)
+	}
+	defer re.Close()
+	_, err = io.Copy(w, re)
+	if err != nil {
+		log.Println(err)
+	}
+
+	w.Write([]byte("Read non-existent object:\n"))
+
+	re, err = bucket.Object("non-existent-object").NewReader(context.Background())
+	if err != nil {
+		log.Println(err)
+	}
+	defer re.Close()
+	_, err = io.Copy(w, re)
+	if err != nil {
+		log.Println(err)
+	}
+}
