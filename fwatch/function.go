@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"sync"
@@ -19,6 +20,7 @@ var (
 
 	// names of environment variables
 	envBucket  = "BUCKET"
+	envGoinsta = "GOINSTA"
 	envPass    = "PASS"
 	envProject = "GCP_PROJECT"
 	envUser    = "USER"
@@ -42,16 +44,25 @@ func (cl *client) Login() {
 	// storage
 	store, err := storage.NewClient(ctx)
 	if err != nil {
-		log.Printf("Login Error: cloud storage failed: %v", err)
-		panic(err)
+		panic(fmt.Errorf("Login Error: cloud storage failed: %v", err))
 	}
 	cl.bucket = store.Bucket(envBucket)
 
 	// goinsta
+	if os.Getenv(envGoinsta) != "" {
+		f, err := ioutil.TempFile("","goinsta")
+		if err != nil {
+			panic(fmt.Errorf("Login Error: create temp file failed: %v", err))
+		}
+		cl.ig, err = goinsta.Import(f.Name())
+		if err != nil {
+			panic(fmt.Errorf("Login Error: import goinsta state failed: %v", err))
+		}
+
+	}
 	cl.ig = goinsta.New(os.Getenv(envUser), os.Getenv(envPass))
 	if err := cl.ig.Login(); err != nil {
-		log.Printf("Login Error: goinsta failed: %v", err)
-		panic(err)
+		panic(fmt.Errorf("Login Error: goinsta failed: %v", err))
 	}
 }
 
