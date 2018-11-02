@@ -48,7 +48,7 @@ func (cl *client) Login() {
 	if err != nil {
 		panic(fmt.Errorf("Login Error: cloud storage failed: %v", err))
 	}
-	cl.bucket = store.Bucket(envBucket)
+	cl.bucket = store.Bucket(os.Getenv(envBucket))
 
 	// goinsta
 	if os.Getenv(envGoinsta) != "" {
