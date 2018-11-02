@@ -56,6 +56,10 @@ func (cl *client) Login() {
 		if err != nil {
 			panic(fmt.Errorf("Login Error: create temp file failed: %v", err))
 		}
+		err = ioutil.WriteFile(f.Name(), []byte(os.Getenv(envGoinsta)), 0644)
+		if err != nil {
+			panic(fmt.Errorf("Login Error: write env to file failed, %v", err))
+		}
 		cl.ig, err = goinsta.Import(f.Name())
 		if err != nil {
 			panic(fmt.Errorf("Login Error: import goinsta state failed: %v", err))
