@@ -27,6 +27,7 @@ func init() {
 
 func main() {
 	http.HandleFunc("/fwatch", fwatchHandler)
+	http.HandleFunc("/", http.NotFoundHandler())
 
 	port := envPort
 	if port == "" {
