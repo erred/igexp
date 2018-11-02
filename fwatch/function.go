@@ -92,9 +92,7 @@ func Fwatch(ctx context.Context, msg struct{}) error {
 	if err := f.update(); err != nil {
 		log.Printf("Update failed: %v", err)
 	} else {
-		if err := f.save(); err != nil {
-			log.Printf("Save failed: %v", err)
-		}
+		f.save()
 	}
 
 	return nil
@@ -203,23 +201,23 @@ func (f *follow) save() {
 	}
 
 	// Goinsta state
-	f, err := ioutil.TempFile("", "goinsta")
+	fl, err := ioutil.TempFile("", "goinsta")
 	if err != nil {
 		log.Printf("Saving goinsta state failed: %v", err)
 		return
 	}
 	defer func() {
-		if err := os.Remove(f.Name()); err != nil {
+		if err := os.Remove(fl.Name()); err != nil {
 			log.Println("Cleanup goinsta state file from save failed: ", err)
 		}
 	}()
-	if err := c.ig.Export(f.Name()); err != nil {
+	if err := c.ig.Export(fl.Name()); err != nil {
 		log.Println("Goinsta export failed: ", err)
 		return
 	}
 	w = c.bucket.Object(objGoinsta).NewWriter(ctx)
 	defer w.Close()
-	_, err = io.Copy(w, f)
+	_, err = io.Copy(w, fl)
 	if err != nil {
 		log.Println("Uploading goinsta state failed: ", err)
 		return
