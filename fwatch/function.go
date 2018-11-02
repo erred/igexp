@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -29,6 +30,7 @@ var (
 	objEvents    = "fwatch/events.json"
 	objFollowers = "fwatch/followers.json"
 	objFollowing = "fwatch/following.json"
+	objGoinsta   = "fwatch/goinsta.json"
 )
 
 type client struct {
@@ -50,7 +52,7 @@ func (cl *client) Login() {
 
 	// goinsta
 	if os.Getenv(envGoinsta) != "" {
-		f, err := ioutil.TempFile("","goinsta")
+		f, err := ioutil.TempFile("", "goinsta")
 		if err != nil {
 			panic(fmt.Errorf("Login Error: create temp file failed: %v", err))
 		}
@@ -58,11 +60,15 @@ func (cl *client) Login() {
 		if err != nil {
 			panic(fmt.Errorf("Login Error: import goinsta state failed: %v", err))
 		}
-
-	}
-	cl.ig = goinsta.New(os.Getenv(envUser), os.Getenv(envPass))
-	if err := cl.ig.Login(); err != nil {
-		panic(fmt.Errorf("Login Error: goinsta failed: %v", err))
+		if err = os.Remove(f.Name()); err != nil {
+			log.Println("failed to clean up goinsta restore file: ", err)
+		}
+		fmt.Println("Logged in with restore")
+	} else {
+		cl.ig = goinsta.New(os.Getenv(envUser), os.Getenv(envPass))
+		if err := cl.ig.Login(); err != nil {
+			panic(fmt.Errorf("Login Error: goinsta failed: %v", err))
+		}
 	}
 }
 
@@ -175,7 +181,7 @@ func (f *follow) update() error {
 }
 
 // save saves the current follows back to storage
-func (f *follow) save() error {
+func (f *follow) save() {
 	ctx := context.Background()
 
 	w := c.bucket.Object(objEvents).NewWriter(ctx)
@@ -196,7 +202,29 @@ func (f *follow) save() error {
 		log.Printf("Saving %v failed: %v", objFollowing, err)
 	}
 
-	return nil
+	// Goinsta state
+	f, err := ioutil.TempFile("", "goinsta")
+	if err != nil {
+		log.Printf("Saving goinsta state failed: %v", err)
+		return
+	}
+	defer func() {
+		if err := os.Remove(f.Name()); err != nil {
+			log.Println("Cleanup goinsta state file from save failed: ", err)
+		}
+	}()
+	if err := c.ig.Export(f.Name()); err != nil {
+		log.Println("Goinsta export failed: ", err)
+		return
+	}
+	w = c.bucket.Object(objGoinsta).NewWriter(ctx)
+	defer w.Close()
+	_, err = io.Copy(w, f)
+	if err != nil {
+		log.Println("Uploading goinsta state failed: ", err)
+		return
+	}
+
 }
 
 func diff(old, cur map[int64]goinsta.User, ev string) []Event {
