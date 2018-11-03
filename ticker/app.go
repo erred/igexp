@@ -14,7 +14,7 @@ var (
 	client *pubsub.Client
 
 	envPort    = os.Getenv("PORT")
-	envProject = os.Getenv("GCP_PROJECT")
+	envProject = os.Getenv("GOOGLE_CLOUD_PROJECT")
 )
 
 func init() {
