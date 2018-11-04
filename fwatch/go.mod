@@ -5,6 +5,7 @@ require (
 	github.com/google/martian v2.1.0+incompatible // indirect
 	github.com/googleapis/gax-go v2.0.0+incompatible // indirect
 	github.com/seankhliao/igtools/goinsta v0.0.0-20181102060821-a2d83b60dddb
+	github.com/stamblerre/gocode v0.0.0-20181016172724-12640289f650 // indirect
 	go.opencensus.io v0.18.0 // indirect
 	golang.org/x/net v0.0.0-20181029044818-c44066c5c816 // indirect
 	golang.org/x/oauth2 v0.0.0-20181031022657-8527f56f7107 // indirect
