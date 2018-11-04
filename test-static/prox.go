@@ -24,7 +24,7 @@ func P(w http.ResponseWriter, r *http.Request) {
 	// setup
 	s.Do(func() {
 		log.Println("initializing...")
-		cmd = exec.Command("./compiled_binary")
+		cmd = exec.Command("/srv/files/compiled_binary")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		err := cmd.Start()
