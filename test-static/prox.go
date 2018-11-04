@@ -17,7 +17,7 @@ var rp *httputil.ReverseProxy
 func P(w http.ResponseWriter, r *http.Request) {
 	// setup
 	s.Do(func() {
-		cmd = exec.Command("compiled_binary")
+		cmd = exec.Command("./compiled_binary")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Start()
