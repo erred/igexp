@@ -10,7 +10,7 @@ import (
 	"sync"
 )
 
-var s *sync.Once
+var s sync.Once
 var cmd *exec.Cmd
 var rp *httputil.ReverseProxy
 
