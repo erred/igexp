@@ -1,6 +1,7 @@
 package prox
 
 import (
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -23,7 +24,7 @@ func P(w http.ResponseWriter, r *http.Request) {
 		cmd.Start()
 		url, err := url.Parse("localhost:8080")
 		if err != nil {
-			// TODO handle error
+			log.Println(err)
 		}
 		rp = httputil.NewSingleHostReverseProxy(url)
 	})
