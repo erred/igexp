@@ -31,7 +31,7 @@ func P(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println(err)
 		}
-		url, err := url.Parse("http://localhost:8080")
+		url, err := url.Parse("http://127.0.0.1:8080")
 		if err != nil {
 			log.Println(err)
 		}
