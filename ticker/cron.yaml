@@ -1,4 +1,4 @@
 cron:
   - description: "fwatch trigger"
-    url: /igtools-tick
+    url: /igtools-fwatch
     schedule: every 3 hours
