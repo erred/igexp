@@ -40,12 +40,16 @@ func main() {
 }
 
 func defaultHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("X-Appengine-Cron") != "true" {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 	ctx := context.Background()
 	topic := path.Base(r.URL.Path)
 
-	if _, err := client.Topic(topic).Publish(ctx, &pubsub.Message{}).Get(ctx); err != nil {
+	if _, err := client.Topic(topic).Publish(ctx, &pubsub.Message{Data: []byte("ping!")}).Get(ctx); err != nil {
 		log.Println("Publish failed: ", err)
-	} else {
-		fmt.Println("Publish empty message to ", topic)
+		return
 	}
+	fmt.Println("Publish empty message to ", topic)
 }
