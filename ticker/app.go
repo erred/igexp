@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 
 	"cloud.google.com/go/pubsub"
 )
@@ -26,7 +27,7 @@ func init() {
 }
 
 func main() {
-	http.HandleFunc("/fwatch", fwatchHandler)
+	http.HandleFunc("/", defaultHandler)
 
 	port := envPort
 	if port == "" {
@@ -34,14 +35,17 @@ func main() {
 		log.Printf("Defaulting to port %s", port)
 	}
 
-	log.Printf("Listening on port %s", port)
+	log.Printf("Started on port %s", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
 }
 
-func fwatchHandler(w http.ResponseWriter, r *http.Request) {
+func defaultHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
-	_, err := client.Topic("igtools-tick").Publish(ctx, &pubsub.Message{Data: []byte("app engine trigger fwatch")}).Get(ctx)
-	if err != nil {
-		log.Println("Fwatch trigger error: ", err)
+	topic := path.Base(r.URL.Path)
+
+	if _, err := client.Topic(topic).Publish(ctx, &pubsub.Message{}).Get(ctx); err != nil {
+		log.Println("Publish failed: ", err)
+	} else {
+		fmt.Println("Publish empty message to ", topic)
 	}
 }
