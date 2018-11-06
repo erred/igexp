@@ -71,8 +71,6 @@ func (cl *client) Login() {
 		panic(fmt.Errorf("Import Error: %v", err))
 	}
 
-	fmt.Println("Logged in with restore")
-
 	// downlist
 	r, err = cl.bucket.Object(objDownlist).NewReader(ctx)
 	if err != nil {
@@ -83,6 +81,8 @@ func (cl *client) Login() {
 	if err = json.NewDecoder(r).Decode(&cl.downlist); err != nil {
 		panic(fmt.Errorf("Decode downlist: %v", err))
 	}
+
+	fmt.Println("Logged in with restore")
 }
 
 // save saves the current follows back to storage
@@ -102,6 +102,8 @@ func (cl *client) save() {
 	if err := json.NewEncoder(w).Encode(cl.downlist); err != nil {
 		log.Println("Downlist export failed: ", err)
 	}
+
+	fmt.Println("saved!")
 }
 
 func Mkeep(ctx context.Context, di DownloadItem) error {
@@ -117,6 +119,7 @@ func Mkeep(ctx context.Context, di DownloadItem) error {
 	// trigger
 
 	if di.ExternalTrigger {
+		fmt.Println("External trigger")
 		a, err := newArchive()
 		if err != nil {
 			log.Println("newArchive failed:", err)
@@ -128,6 +131,7 @@ func Mkeep(ctx context.Context, di DownloadItem) error {
 			return err
 		}
 	} else {
+		fmt.Println("Internal trigger")
 
 		itname := path.Join(objBase, "media", di.UserID, di.ItemID+di.Ext)
 		w := c.bucket.Object(itname).NewWriter(context.Background())
@@ -146,6 +150,7 @@ func Mkeep(ctx context.Context, di DownloadItem) error {
 			log.Println("failed to parse int: ", err)
 		}
 		c.downlist[uid][di.ItemID] = struct{}{}
+		fmt.Println("finished download: ", di.ItemID)
 	}
 
 	c.save()
@@ -231,12 +236,14 @@ func (a archive) downloaded(userID int64, mediaID string) bool {
 
 func (a *archive) getNewMedia() error {
 	following := c.ig.Account.Following()
+	counter := 0
 	for following.Next() {
 		if following.Error() != nil {
 			return fmt.Errorf("getNewMedia get following: %v", following.Error())
 		}
-
 		for _, u := range following.Users {
+			counter += 1
+			fmt.Println("Processing user: #", counter, " ", u.Username)
 			if !a.blacklisted(u.ID, blacklistStory) {
 				stories := u.Stories()
 				for stories.Next() {
