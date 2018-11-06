@@ -33,11 +33,6 @@ var (
 	objGoinsta   = "mkeep/goinsta.json"
 )
 
-// Msg is the pubsub message
-type Msg struct {
-	Data string `json:"data"`
-}
-
 type client struct {
 	bucket   *storage.BucketHandle
 	ig       *goinsta.Instagram
@@ -138,7 +133,7 @@ func Mkeep(ctx context.Context, di DownloadItem) error {
 		w := c.bucket.Object(itname).NewWriter(context.Background())
 		defer w.Close()
 
-		res, err := c.ig.Client().Get(msg.Data)
+		res, err := c.ig.Client().Get(di.Url)
 		if err != nil {
 			log.Println("failed to download: ", err)
 		}
