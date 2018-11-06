@@ -242,18 +242,18 @@ func (a *archive) getNewMedia() error {
 	following := c.ig.Account.Following()
 	counter := 0
 	for following.Next() {
-		if following.Error() != nil {
-			return fmt.Errorf("getNewMedia get following: %v", following.Error())
-		}
+		// if following.Error() != nil {
+		// 	return fmt.Errorf("getNewMedia get following: %v", following.Error())
+		// }
 		for _, u := range following.Users {
 			counter += 1
 			fmt.Println("Processing user: #", counter, " ", u.Username)
 			if !a.blacklisted(u.ID, blacklistStory) {
 				stories := u.Stories()
 				for stories.Next() {
-					if stories.Error() != nil {
-						log.Printf("getNewMedia get stories for %v, err: %v", u.Username, stories.Error())
-					}
+					// if stories.Error() != nil {
+					// 	log.Printf("getNewMedia get stories for %v, err: %v", u.Username, stories.Error())
+					// }
 
 					for _, it := range stories.Items {
 						if a.downloaded(u.ID, it.ID) {
@@ -270,9 +270,9 @@ func (a *archive) getNewMedia() error {
 			if !a.blacklisted(u.ID, blacklistFeed) {
 				feed := u.Feed()
 				for feed.Next() {
-					if feed.Error() != nil {
-						log.Printf("getNewMedia get feed for %v, err: %v", u.Username, feed.Error())
-					}
+					// if feed.Error() != nil {
+					// 	log.Printf("getNewMedia get feed for %v, err: %v", u.Username, feed.Error())
+					// }
 
 					for _, it := range feed.Items {
 						breakout := false
@@ -306,9 +306,9 @@ func (a *archive) getNewMedia() error {
 					log.Printf("getNewMedia pre get tags for %v, err: %v", u.Username, err)
 				}
 				for feed.Next() {
-					if feed.Error() != nil {
-						log.Printf("getNewMedia get tags for %v, err: %v", u.Username, feed.Error())
-					}
+					// if feed.Error() != nil {
+					// 	log.Printf("getNewMedia get tags for %v, err: %v", u.Username, feed.Error())
+					// }
 
 					for _, it := range feed.Items {
 						breakout := false
