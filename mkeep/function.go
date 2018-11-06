@@ -62,7 +62,7 @@ func (cl *client) Login() {
 	// goinsta
 	r, err := cl.bucket.Object(objGoinsta).NewReader(ctx)
 	if err != nil {
-		panic(fmt.Errorf("Login Error: Reader creation failed: %v", err))
+		panic(fmt.Errorf("Login Error: import %v failed: %v", objGoinsta, err))
 	}
 	defer r.Close()
 
@@ -74,12 +74,16 @@ func (cl *client) Login() {
 	// downlist
 	r, err = cl.bucket.Object(objDownlist).NewReader(ctx)
 	if err != nil {
-		panic(fmt.Errorf("Login Error: Reader creation failed: %v", err))
-	}
-	defer r.Close()
+		if err != storage.ErrObjectNotExist {
+			panic(fmt.Errorf("Login Error: import %v failed: %v", objDownlist, err))
+		}
+	} else {
+		defer r.Close()
 
-	if err = json.NewDecoder(r).Decode(&cl.downlist); err != nil {
-		panic(fmt.Errorf("Decode downlist: %v", err))
+		if err = json.NewDecoder(r).Decode(&cl.downlist); err != nil {
+			panic(fmt.Errorf("Decode downlist: %v", err))
+		}
+
 	}
 
 	fmt.Println("Logged in with restore")
