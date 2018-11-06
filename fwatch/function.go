@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"sync"
@@ -54,21 +52,11 @@ func (cl *client) Login() {
 	}
 	defer r.Close()
 
-	f, err := ioutil.TempFile("", "goinsta")
+	cl.ig, err = goinsta.ImportReader(r)
 	if err != nil {
-		panic(fmt.Errorf("Login Error: create temp file failed: %v", err))
+		panic(fmt.Errorf("Import Error: %v", err))
 	}
-	_, err = io.Copy(f, r)
-	if err != nil {
-		panic(fmt.Errorf("Login Error: write env to file failed, %v", err))
-	}
-	cl.ig, err = goinsta.Import(f.Name())
-	if err != nil {
-		panic(fmt.Errorf("Login Error: import goinsta state failed: %v", err))
-	}
-	if err = os.Remove(f.Name()); err != nil {
-		log.Println("failed to clean up goinsta restore file: ", err)
-	}
+
 	fmt.Println("Logged in with restore")
 }
 
@@ -91,9 +79,10 @@ func Fwatch(ctx context.Context, msg struct{}) error {
 
 	if err := f.update(); err != nil {
 		log.Printf("Update failed: %v", err)
-	} else {
-		f.save()
+		return err
 	}
+
+	f.save()
 
 	return nil
 }
@@ -201,28 +190,11 @@ func (f *follow) save() {
 	}
 
 	// Goinsta state
-	fl, err := ioutil.TempFile("", "goinsta")
-	if err != nil {
-		log.Printf("Saving goinsta state failed: %v", err)
-		return
-	}
-	defer func() {
-		if err := os.Remove(fl.Name()); err != nil {
-			log.Println("Cleanup goinsta state file from save failed: ", err)
-		}
-	}()
-	if err := c.ig.Export(fl.Name()); err != nil {
-		log.Println("Goinsta export failed: ", err)
-		return
-	}
 	w = c.bucket.Object(objGoinsta).NewWriter(ctx)
 	defer w.Close()
-	_, err = io.Copy(w, fl)
-	if err != nil {
-		log.Println("Uploading goinsta state failed: ", err)
-		return
+	if err := goinsta.Export(c.ig, w); err != nil {
+		log.Println("Goinsta export failed: ", err)
 	}
-
 }
 
 func diff(old, cur map[int64]goinsta.User, ev string) []Event {
