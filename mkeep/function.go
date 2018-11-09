@@ -236,8 +236,9 @@ func (a archive) downloaded(userID int64, mediaID string) bool {
 
 func (a *archive) getItems(its []goinsta.Item, u goinsta.User) {
 	for _, it := range its {
-		breakout := false
+
 		if len(it.CarouselMedia) != 0 {
+			breakout := false
 			for _, i := range it.CarouselMedia {
 				if a.downloaded(u.ID, i.ID) {
 					breakout = true
@@ -250,7 +251,9 @@ func (a *archive) getItems(its []goinsta.Item, u goinsta.User) {
 			if breakout {
 				break
 			}
+			continue
 		}
+
 		if a.downloaded(u.ID, it.ID) {
 			break
 		}
