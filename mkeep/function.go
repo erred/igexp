@@ -84,8 +84,6 @@ func (cl *client) Login() {
 		}
 
 	}
-
-	fmt.Println("Logged in with restore")
 }
 
 // save saves the current follows back to storage
@@ -105,8 +103,6 @@ func (cl *client) save() {
 	if err := json.NewEncoder(w).Encode(cl.downlist); err != nil {
 		log.Println("Downlist export failed: ", err)
 	}
-
-	fmt.Println("saved!")
 }
 
 func Mkeep(ctx context.Context, di DownloadItem) error {
@@ -122,7 +118,7 @@ func Mkeep(ctx context.Context, di DownloadItem) error {
 	// trigger
 
 	if di.ExternalTrigger {
-		fmt.Println("External trigger")
+		fmt.Println("External trigger", di)
 		a, err := newArchive()
 		if err != nil {
 			log.Println("newArchive failed:", err)
@@ -131,8 +127,7 @@ func Mkeep(ctx context.Context, di DownloadItem) error {
 
 		a.getNewMedia()
 	} else {
-		fmt.Println("Internal trigger")
-		fmt.Print(di)
+		fmt.Println("Internal trigger", di)
 
 		// itname := path.Join(objBase, "media", di.UserID, di.ItemID+di.Ext)
 		// w := c.bucket.Object(itname).NewWriter(context.Background())
@@ -312,10 +307,11 @@ func (a *archive) getNewMedia() {
 func queue(item goinsta.Item) error {
 	buf := bytes.Buffer{}
 	ctx := context.Background()
+	fmt.Println("queue called with: ", item)
 	if err := json.NewEncoder(&buf).Encode(NewDownloadItem(item)); err != nil {
 		return fmt.Errorf("encode failed: %v", err)
 	}
-
+	fmt.Println("q item: ", item, " encoded: ", buf.String())
 	if _, err := c.topic.Publish(ctx, &pubsub.Message{Data: buf.Bytes()}).Get(ctx); err != nil {
 		return fmt.Errorf("queue failed: %v", err)
 	}
