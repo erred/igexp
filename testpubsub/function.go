@@ -37,7 +37,10 @@ func P(c context.Context, msg Msg) error {
 		if err != nil {
 			log.Println(err)
 		}
-		cl.Topic("testpubsub").Publish(context.Background(), &pubsub.Message{Data: buf.Bytes()})
+		_, err = cl.Topic("testpubsub").Publish(context.Background(), &pubsub.Message{Data: buf.Bytes()}).Get(context.Background())
+		if err != nil {
+			log.Println(err)
+		}
 
 	}
 	return nil
