@@ -331,8 +331,12 @@ func NewDownloadItem(it goinsta.Item) DownloadItem {
 	var link string
 	if len(it.Images.Versions) > 0 {
 		link = it.Images.GetBest()
+		link = goinsta.GetBest(it.Images.Versions)
 	} else {
 		link = goinsta.GetBest(it.Videos)
+	}
+	if link == "" {
+		log.Println("empty link: ", it.Videos, it.Images)
 	}
 	u, err := url.Parse(link)
 	if err != nil {
