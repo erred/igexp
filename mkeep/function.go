@@ -244,7 +244,7 @@ func (a *archive) getItems(its []goinsta.Item, u goinsta.User) {
 					breakout = true
 					break
 				}
-				if err := queue(it); err != nil {
+				if err := queue(i); err != nil {
 					log.Println("queue failed: ", err)
 				}
 			}
