@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path"
@@ -130,41 +129,39 @@ func Mkeep(ctx context.Context, di DownloadItem) error {
 			return err
 		}
 
-		if err := a.getNewMedia(); err != nil {
-			log.Println("getNewMedia failed: ", err)
-			return err
-		}
+		a.getNewMedia()
 	} else {
 		fmt.Println("Internal trigger")
+		fmt.Print(di)
 
-		itname := path.Join(objBase, "media", di.UserID, di.ItemID+di.Ext)
-		w := c.bucket.Object(itname).NewWriter(context.Background())
-		defer w.Close()
+		// itname := path.Join(objBase, "media", di.UserID, di.ItemID+di.Ext)
+		// w := c.bucket.Object(itname).NewWriter(context.Background())
+		// defer w.Close()
+		//
+		// res, err := c.ig.Client().Get(di.Url)
+		// if err != nil {
+		// 	log.Println("failed to download: ", err)
+		// }
+		// defer res.Body.Close()
+		//
+		// io.Copy(w, res.Body)
 
-		res, err := c.ig.Client().Get(di.Url)
-		if err != nil {
-			log.Println("failed to download: ", err)
-		}
-		defer res.Body.Close()
-
-		io.Copy(w, res.Body)
-
-		uid, err := strconv.ParseInt(di.UserID, 10, 64)
-		if err != nil {
-			log.Println("failed to parse int: ", err)
-		}
-		c.downlist[uid][di.ItemID] = struct{}{}
+		// uid, err := strconv.ParseInt(di.UserID, 10, 64)
+		// if err != nil {
+		// 	log.Println("failed to parse int: ", err)
+		// }
+		// c.downlist[uid][di.ItemID] = struct{}{}
 		fmt.Println("finished download: ", di.ItemID)
 	}
 
-	c.save()
+	// c.save()
 
 	return nil
 }
 
 // Blacklist of media feeds to keep
 // {
-//	userID : { "tagged": {} }
+//	userID : ["tagged", "feed"]
 // }
 // story, feed, tag
 var (
@@ -173,7 +170,7 @@ var (
 	blacklistTag   = "tag"
 )
 
-type Blacklist map[int64]map[string]struct{}
+type Blacklist map[int64][]string
 
 // Downlist is a list of media we already have
 type Downlist map[int64]map[string]struct{}
@@ -194,6 +191,7 @@ func newArchive() (*archive, error) {
 		if err := json.NewDecoder(r).Decode(&a.blacklist); err != nil {
 			return &a, fmt.Errorf("%v decode error: %v", objBlacklist, err)
 		}
+		fmt.Println("Successfully imported blacklist.json")
 	case storage.ErrObjectNotExist:
 	default:
 		return &a, fmt.Errorf("%v reader error: %v", objBlacklist, err)
@@ -203,9 +201,10 @@ func newArchive() (*archive, error) {
 	switch err {
 	case nil:
 		defer r.Close()
-		if err := json.NewDecoder(r).Decode(&a.blacklist); err != nil {
+		if err := json.NewDecoder(r).Decode(&a.downlist); err != nil {
 			return &a, fmt.Errorf("%v decode error: %v", objDownlist, err)
 		}
+		fmt.Println("Successfully imported downlist.json")
 	case storage.ErrObjectNotExist:
 	default:
 		return &a, fmt.Errorf("%v reader error: %v", objDownlist, err)
@@ -215,15 +214,16 @@ func newArchive() (*archive, error) {
 }
 
 func (a archive) blacklisted(userID int64, feed string) bool {
-	fs, ok := a.blacklist[userID]
+	list, ok := a.blacklist[userID]
 	if !ok {
 		return false
 	}
-	_, ok = fs[feed]
-	if !ok {
-		return false
+	for _, it := range list {
+		if it == feed {
+			return true
+		}
 	}
-	return true
+	return false
 }
 
 func (a archive) downloaded(userID int64, mediaID string) bool {
@@ -238,107 +238,75 @@ func (a archive) downloaded(userID int64, mediaID string) bool {
 	return true
 }
 
-func (a *archive) getNewMedia() error {
+func (a *archive) getItems(its []goinsta.Item, u goinsta.User) {
+	for _, it := range its {
+		breakout := false
+		if len(it.CarouselMedia) != 0 {
+			for _, i := range it.CarouselMedia {
+				if a.downloaded(u.ID, i.ID) {
+					breakout = true
+					break
+				}
+				if err := queue(it); err != nil {
+					log.Println("queue failed: ", err)
+				}
+			}
+			if breakout {
+				break
+			}
+		}
+		if a.downloaded(u.ID, it.ID) {
+			break
+		}
+		if err := queue(it); err != nil {
+			log.Println("queue failed: ", err)
+		}
+	}
+
+}
+
+func (a *archive) getUserMedia(u goinsta.User) {
+	if !a.blacklisted(u.ID, blacklistStory) {
+		stories := u.Stories()
+		for stories.Next() {
+			a.getItems(stories.Items, u)
+		}
+	}
+
+	if !a.blacklisted(u.ID, blacklistFeed) {
+		feed := u.Feed()
+		for feed.Next() {
+			a.getItems(feed.Items, u)
+		}
+	}
+
+	if !a.blacklisted(u.ID, blacklistTag) {
+		feed, err := u.Tags([]byte{})
+		if err != nil {
+			log.Printf("getNewMedia pre get tags for %v, err: %v", u.Username, err)
+		}
+		for feed.Next() {
+			a.getItems(feed.Items, u)
+		}
+
+	}
+
+}
+
+func (a *archive) getNewMedia() {
 	following := c.ig.Account.Following()
 	counter := 0
 	for following.Next() {
-		// if following.Error() != nil {
-		// 	return fmt.Errorf("getNewMedia get following: %v", following.Error())
-		// }
 		for _, u := range following.Users {
-			counter += 1
+			counter++
 			fmt.Println("Processing user: #", counter, " ", u.Username)
-			if !a.blacklisted(u.ID, blacklistStory) {
-				stories := u.Stories()
-				for stories.Next() {
-					// if stories.Error() != nil {
-					// 	log.Printf("getNewMedia get stories for %v, err: %v", u.Username, stories.Error())
-					// }
+			a.getUserMedia(u)
 
-					for _, it := range stories.Items {
-						if a.downloaded(u.ID, it.ID) {
-							break
-						}
-
-						if err := queue(it); err != nil {
-							log.Println("queue failed: ", err)
-						}
-					}
-				}
-			}
-
-			if !a.blacklisted(u.ID, blacklistFeed) {
-				feed := u.Feed()
-				for feed.Next() {
-					// if feed.Error() != nil {
-					// 	log.Printf("getNewMedia get feed for %v, err: %v", u.Username, feed.Error())
-					// }
-
-					for _, it := range feed.Items {
-						breakout := false
-						if len(it.CarouselMedia) != 0 {
-							for _, i := range it.CarouselMedia {
-								if a.downloaded(u.ID, i.ID) {
-									breakout = true
-									break
-								}
-								if err := queue(it); err != nil {
-									log.Println("queue failed: ", err)
-								}
-							}
-							if breakout {
-								break
-							}
-						}
-						if a.downloaded(u.ID, it.ID) {
-							break
-						}
-						if err := queue(it); err != nil {
-							log.Println("queue failed: ", err)
-						}
-					}
-				}
-			}
-
-			if !a.blacklisted(u.ID, blacklistTag) {
-				feed, err := u.Tags([]byte{})
-				if err != nil {
-					log.Printf("getNewMedia pre get tags for %v, err: %v", u.Username, err)
-				}
-				for feed.Next() {
-					// if feed.Error() != nil {
-					// 	log.Printf("getNewMedia get tags for %v, err: %v", u.Username, feed.Error())
-					// }
-
-					for _, it := range feed.Items {
-						breakout := false
-						if len(it.CarouselMedia) != 0 {
-							for _, i := range it.CarouselMedia {
-								if a.downloaded(u.ID, i.ID) {
-									breakout = true
-									break
-								}
-								if err := queue(it); err != nil {
-									log.Println("queue failed: ", err)
-								}
-							}
-							if breakout {
-								break
-							}
-						}
-						if a.downloaded(u.ID, it.ID) {
-							break
-						}
-						if err := queue(it); err != nil {
-							log.Println("queue failed: ", err)
-						}
-					}
-				}
-
+			if counter > 1 {
+				return
 			}
 		}
 	}
-	return nil
 }
 
 func queue(item goinsta.Item) error {
@@ -347,6 +315,7 @@ func queue(item goinsta.Item) error {
 	if err := json.NewEncoder(&buf).Encode(NewDownloadItem(item)); err != nil {
 		return fmt.Errorf("encode failed: %v", err)
 	}
+
 	if _, err := c.topic.Publish(ctx, &pubsub.Message{Data: buf.Bytes()}).Get(ctx); err != nil {
 		return fmt.Errorf("queue failed: %v", err)
 	}
