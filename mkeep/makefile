@@ -11,3 +11,6 @@ deploy:
 		--runtime go111 \
 		--source https://source.developers.google.com/projects/com-seankhliao/repos/igtools/revisions/master/paths/mkeep \
 		--trigger-topic igtools-mkeep
+
+external-trigger:
+	gcloud alpha functions call mkeep --region asia-northeast1 --data '{"ExternalTrigger":true}'

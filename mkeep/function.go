@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"path"
 	"strconv"
@@ -307,12 +308,12 @@ func (a *archive) getNewMedia() {
 func queue(item goinsta.Item) error {
 	buf := bytes.Buffer{}
 	ctx := context.Background()
-	fmt.Println("queue called with: ", item)
 	if err := json.NewEncoder(&buf).Encode(NewDownloadItem(item)); err != nil {
 		return fmt.Errorf("encode failed: %v", err)
 	}
-	fmt.Println("q item: ", item, " encoded: ", buf.String())
-	if _, err := c.topic.Publish(ctx, &pubsub.Message{Data: buf.Bytes()}).Get(ctx); err != nil {
+	msg := pubsub.Message{Data: buf.Bytes()}
+	fmt.Println("q encoded: ", buf.String(), "pubsub msg: ", msg)
+	if _, err := c.topic.Publish(ctx, &msg).Get(ctx); err != nil {
 		return fmt.Errorf("queue failed: %v", err)
 	}
 	return nil
@@ -327,16 +328,21 @@ type DownloadItem struct {
 }
 
 func NewDownloadItem(it goinsta.Item) DownloadItem {
-	var url string
+	var link string
 	if len(it.Images.Versions) > 0 {
-		url = it.Images.GetBest()
+		link = it.Images.GetBest()
 	} else {
-		url = goinsta.GetBest(it.Videos)
+		link = goinsta.GetBest(it.Videos)
+	}
+	u, err := url.Parse(link)
+	if err != nil {
+		log.Println("failed to parse url: ", err)
+		return DownloadItem{}
 	}
 	return DownloadItem{
 		UserID: strconv.FormatInt(it.User.ID, 10),
 		ItemID: it.ID,
-		Ext:    path.Ext(url),
-		Url:    url,
+		Ext:    path.Ext(u.Path),
+		Url:    link,
 	}
 }
