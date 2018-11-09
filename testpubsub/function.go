@@ -37,7 +37,7 @@ func P(c context.Context, msg Msg) error {
 		if err != nil {
 			log.Println(err)
 		}
-		_, err = cl.Topic("testpubsub").Publish(context.Background(), &pubsub.Message{Data: buf.Bytes()}).Get(context.Background())
+		_, err = cl.Topic("igtools-testpubsub").Publish(context.Background(), &pubsub.Message{Data: buf.Bytes()}).Get(context.Background())
 		if err != nil {
 			log.Println(err)
 		}
