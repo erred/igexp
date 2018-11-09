@@ -106,7 +106,7 @@ func (cl *client) save() {
 	}
 }
 
-func Mkeep(ctx context.Context, di DownloadItem) error {
+func Mkeep(ctx context.Context, msg pubsub.Message) error {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Println("panic: ", r)
@@ -117,13 +117,16 @@ func Mkeep(ctx context.Context, di DownloadItem) error {
 	c.once.Do(c.Login)
 
 	// trigger
+	var di DownloadItem
+	if err := json.Unmarshal(msg.Data, &di); err != nil {
+		return fmt.Errorf("failed to unmarshal pubsub message %v", err)
+	}
 
 	if di.ExternalTrigger {
 		fmt.Println("External trigger", di)
 		a, err := newArchive()
 		if err != nil {
-			log.Println("newArchive failed:", err)
-			return err
+			return fmt.Errorf("newArchive failed: %v", err)
 		}
 
 		a.getNewMedia()
@@ -315,7 +318,6 @@ func queue(item goinsta.Item) error {
 		return fmt.Errorf("encode failed: %v", err)
 	}
 	msg := pubsub.Message{Data: buf.Bytes()}
-	fmt.Println("q encoded: ", buf.String(), "pubsub msg: ", msg)
 	if _, err := c.topic.Publish(ctx, &msg).Get(ctx); err != nil {
 		return fmt.Errorf("queue failed: %v", err)
 	}
