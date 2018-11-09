@@ -3,6 +3,7 @@ package fun
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -19,7 +20,6 @@ type Msg struct {
 }
 
 func P(c context.Context, msg Msg) error {
-	fmt.Println("Received: ", msg)
 	buf := bytes.Buffer{}
 	m2 := Msg{
 		Data:       []byte("string to data byte"),
@@ -43,5 +43,12 @@ func P(c context.Context, msg Msg) error {
 		}
 
 	}
+
+	dst := make([]byte, 100)
+	_, err = base64.StdEncoding.Decode(dst, msg.Data)
+	if err != nil {
+		log.Println(err)
+	}
+	fmt.Println(string(dst))
 	return nil
 }
