@@ -21,27 +21,24 @@ type MyData struct {
 	World bool
 }
 
-func P(c context.Context, msg Msg) error {
-	if msg.C {
-		buf := bytes.Buffer{}
+func P(c context.Context, msg pubsub.Message) error {
+	buf := bytes.Buffer{}
 
-		mydata := MyData{
-			Hello: "push this string",
-			World: true,
-		}
+	mydata := MyData{
+		Hello: "push this string",
+		World: true,
+	}
 
-		if err := json.NewEncoder(&buf).Encode(mydata); err != nil {
-			log.Println(err)
-		}
-		cl, err := pubsub.NewClient(context.Background(), os.Getenv("GCP_PROJECT"))
-		if err != nil {
-			log.Println(err)
-		}
-		_, err = cl.Topic("igtools-testpubsub").Publish(context.Background(), &pubsub.Message{Data: buf.Bytes()}).Get(context.Background())
-		if err != nil {
-			log.Println(err)
-		}
-
+	if err := json.NewEncoder(&buf).Encode(mydata); err != nil {
+		log.Println(err)
+	}
+	cl, err := pubsub.NewClient(context.Background(), os.Getenv("GCP_PROJECT"))
+	if err != nil {
+		log.Println(err)
+	}
+	_, err = cl.Topic("igtools-testpubsub").Publish(context.Background(), &pubsub.Message{Data: buf.Bytes()}).Get(context.Background())
+	if err != nil {
+		log.Println(err)
 	}
 
 	var decoded MyData
