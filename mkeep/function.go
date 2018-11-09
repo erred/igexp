@@ -313,11 +313,12 @@ func (a *archive) getNewMedia() {
 
 func queue(item goinsta.Item) error {
 	buf := bytes.Buffer{}
-	ctx := context.Background()
 	if err := json.NewEncoder(&buf).Encode(NewDownloadItem(item)); err != nil {
 		return fmt.Errorf("encode failed: %v", err)
 	}
 	msg := pubsub.Message{Data: buf.Bytes()}
+
+	ctx := context.Background()
 	if _, err := c.topic.Publish(ctx, &msg).Get(ctx); err != nil {
 		return fmt.Errorf("queue failed: %v", err)
 	}
