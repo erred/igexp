@@ -3,7 +3,6 @@ package fun
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -13,26 +12,27 @@ import (
 )
 
 type Msg struct {
-	Data       []byte
-	TestString string
-	TestBool   bool
-	TestInt    int
+	Data []byte
+	C    bool
+}
+
+type MyData struct {
+	Hello string
+	World bool
 }
 
 func P(c context.Context, msg Msg) error {
-	buf := bytes.Buffer{}
-	m2 := Msg{
-		Data:       []byte("string to data byte"),
-		TestString: "string test publish",
-		TestBool:   false,
-		TestInt:    411,
-	}
-	err := json.NewEncoder(&buf).Encode(m2)
-	if err != nil {
-		log.Println(err)
-	}
+	if msg.C {
+		buf := bytes.Buffer{}
 
-	if msg.TestBool {
+		mydata := MyData{
+			Hello: "push this string",
+			World: true,
+		}
+
+		if err := json.NewEncoder(&buf).Encode(mydata); err != nil {
+			log.Println(err)
+		}
 		cl, err := pubsub.NewClient(context.Background(), os.Getenv("GCP_PROJECT"))
 		if err != nil {
 			log.Println(err)
@@ -44,11 +44,11 @@ func P(c context.Context, msg Msg) error {
 
 	}
 
-	dst := make([]byte, 100)
-	_, err = base64.StdEncoding.Decode(dst, msg.Data)
-	if err != nil {
+	var decoded MyData
+	if err := json.Unmarshal(msg.Data, &decoded); err != nil {
 		log.Println(err)
 	}
-	fmt.Println(string(dst))
+	fmt.Println("json decoded: ", decoded)
+
 	return nil
 }
