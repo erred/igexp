@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/url"
 	"path"
-	"strconv"
 
 	"cloud.google.com/go/pubsub"
 	"github.com/seankhliao/igtools/goinsta"
@@ -49,7 +48,7 @@ func Mkeep(ctx context.Context, psmsg pubsub.Message) error {
 		fmt.Println("Getting all users")
 		return client.getUsers()
 	case ModeUser:
-		fmt.Println("Getting all feeds for ", msg.User.Username)
+		fmt.Println("Getting all feeds for ", msg.UserID)
 		return client.getFeeds(msg)
 	case ModeItem:
 		fmt.Println("Getting item ", msg.ItemID, " for ", msg.UserID)
@@ -68,12 +67,12 @@ var (
 
 // Message comm through pubsub
 type Message struct {
-	Mode   int
-	User   goinsta.User
-	UserID string
-	ItemID string
-	Ext    string
-	Url    string
+	Mode     int
+	UserID   int64
+	Username string
+	ItemID   string
+	Ext      string
+	Url      string
 }
 
 func parseMessage(psmsg pubsub.Message) (Message, error) {
@@ -86,8 +85,9 @@ func parseMessage(psmsg pubsub.Message) (Message, error) {
 
 func newUserMessage(user goinsta.User) Message {
 	return Message{
-		Mode: ModeUser,
-		User: user,
+		Mode:     ModeUser,
+		UserID:   user.ID,
+		Username: user.Username,
 	}
 
 }
@@ -109,11 +109,12 @@ func newItemMessage(item goinsta.Item) Message {
 		return Message{}
 	}
 	return Message{
-		Mode:   ModeItem,
-		UserID: strconv.FormatInt(item.User.ID, 10),
-		ItemID: item.ID,
-		Ext:    path.Ext(u.Path),
-		Url:    link,
+		Mode:     ModeItem,
+		UserID:   item.User.ID,
+		Username: item.User.Username,
+		ItemID:   item.ID,
+		Ext:      path.Ext(u.Path),
+		Url:      link,
 	}
 
 }

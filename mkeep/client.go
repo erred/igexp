@@ -162,7 +162,22 @@ func (c *Client) getUsers() error {
 }
 
 func (c *Client) getFeeds(msg Message) error {
-	user := msg.User
+	breakout := false
+	user := goinsta.User{}
+	following := c.ig.Account.Following()
+	for following.Next() {
+		for _, us := range following.Users {
+			if us.ID == msg.UserID {
+				user = us
+				breakout = true
+				break
+			}
+		}
+		if breakout {
+			break
+		}
+	}
+
 	if !c.isBlacklisted(user.ID, blacklistStory) {
 		feed := user.Stories()
 		for feed.Next() {
@@ -246,7 +261,7 @@ func (c *Client) download(msg Message) error {
 	}
 	defer resp.Body.Close()
 
-	obj := path.Join(objBase, "media", msg.UserID, msg.ItemID+msg.Ext)
+	obj := path.Join(objBase, "media", strconv.FormatInt(msg.UserID, 10), msg.ItemID+msg.Ext)
 	w := c.bucket.Object(obj).NewWriter(context.Background())
 	defer w.Close()
 	_, err = io.Copy(w, resp.Body)
@@ -255,11 +270,7 @@ func (c *Client) download(msg Message) error {
 	}
 
 	// update downlist
-	id, err := strconv.ParseInt(msg.UserID, 10, 64)
-	if err != nil {
-		return fmt.Errorf("Failed to parse UserID as int64: %v", err)
-	}
-	c.downlist[id][msg.ItemID] = struct{}{}
+	c.downlist[msg.UserID][msg.ItemID] = struct{}{}
 
 	return c.save()
 }
