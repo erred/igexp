@@ -80,7 +80,7 @@ func (c *Client) setup() {
 	switch err {
 	case nil:
 		defer r.Close()
-		if err := json.NewDecoder(r).Decode(c.downlist); err != nil {
+		if err := json.NewDecoder(r).Decode(&c.downlist); err != nil {
 			panic(fmt.Errorf("%v decode error: %v", objDownlist, err))
 		}
 	case storage.ErrObjectNotExist:
