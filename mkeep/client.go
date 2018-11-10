@@ -84,6 +84,7 @@ func (c *Client) setup() {
 			panic(fmt.Errorf("%v decode error: %v", objDownlist, err))
 		}
 	case storage.ErrObjectNotExist:
+		c.downlist = map[int64]map[string]struct{}{}
 	default:
 		panic(fmt.Errorf("%v reader error: %v", objDownlist, err))
 	}
@@ -270,6 +271,9 @@ func (c *Client) download(msg Message) error {
 	}
 
 	// update downlist
+	if _, ok := c.downlist[msg.UserID]; !ok {
+		c.downlist[msg.UserID] = map[string]struct{}{}
+	}
 	c.downlist[msg.UserID][msg.ItemID] = struct{}{}
 
 	return c.save()
