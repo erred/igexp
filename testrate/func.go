@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 
 	"cloud.google.com/go/pubsub"
 )
@@ -29,12 +30,14 @@ func F(ctx context.Context, data Data) error {
 
 	fmt.Println("received: ", string(data.Data))
 
-	base := "testmsg"
+	base := "amsg"
 	if data.External {
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 111; i++ {
 			c.Topic("test-ratelimit").Publish(context.Background(), &pubsub.Message{Data: []byte(fmt.Sprintf(base+"-%v", i))}).Get(context.Background())
 		}
 
+	} else {
+		time.Sleep(10 * time.Second)
 	}
 
 	return nil
