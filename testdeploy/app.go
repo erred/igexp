@@ -3,10 +3,10 @@ package deploy
 import (
 	"net/http"
 
-	"github.com/zmb3/spotify"
+	"github.com/seankhliao/igtools/goinsta"
 )
 
 func F(w http.ResponseWriter, r *http.Request) {
-	_ = spotify.Client{}
+	_ = goinsta.New("", "")
 	w.Write([]byte("Hello, World"))
 }
