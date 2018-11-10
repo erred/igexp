@@ -46,10 +46,10 @@ func Mkeep(ctx context.Context, psmsg pubsub.Message) error {
 	switch msg.Mode {
 	case ModeAll:
 		fmt.Println("Getting all users")
-		return client.getUsers()
+		client.getUsers()
 	case ModeUser:
 		fmt.Println("Getting all feeds for ", msg.Username)
-		return client.getFeeds(msg)
+		client.getFeeds(msg)
 	case ModeItem:
 		fmt.Println("Getting item ", msg.ItemID, msg.Ext, " for ", msg.Username)
 		return client.download(msg)

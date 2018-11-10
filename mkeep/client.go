@@ -97,12 +97,12 @@ func (c *Client) setup() {
 		if err := json.NewDecoder(r).Decode(&c.blacklist); err != nil {
 			panic(fmt.Errorf("%v decode error: %v", objBlacklist, err))
 		}
-		fmt.Println("Successfully imported blacklist.json")
 	case storage.ErrObjectNotExist:
 	default:
 		panic(fmt.Errorf("%v reader error: %v", objBlacklist, err))
 	}
 
+	fmt.Println("successfully completed setup")
 }
 
 // save saves the current follows back to storage
@@ -150,19 +150,21 @@ func (c *Client) isDownloaded(userID int64, mediaID string) bool {
 	return true
 }
 
-func (c *Client) getUsers() error {
+func (c *Client) getUsers() {
 	following := c.ig.Account.Following()
+	counter := 0
 	for following.Next() {
 		for _, user := range following.Users {
 			if !c.isBlacklisted(user.ID, "") {
+				counter++
 				c.queueUser(user)
 			}
 		}
 	}
-	return nil
+	fmt.Println("getUsers queued ", counter, " users")
 }
 
-func (c *Client) getFeeds(msg Message) error {
+func (c *Client) getFeeds(msg Message) {
 	breakout := false
 	user := goinsta.User{}
 	following := c.ig.Account.Following()
@@ -196,13 +198,13 @@ func (c *Client) getFeeds(msg Message) error {
 		feed, err := user.Tags([]byte{})
 		if err != nil {
 			log.Printf("get tagged for %v, %v error: %v", user.ID, user.Username, err)
-			return nil
+			return
 		}
 		for feed.Next() {
 			c.getItems(feed.Items)
 		}
 	}
-	return nil
+	return
 }
 
 func (c *Client) getItems(items []goinsta.Item) {
