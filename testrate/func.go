@@ -30,10 +30,15 @@ func F(ctx context.Context, data Data) error {
 
 	fmt.Println("received: ", string(data.Data))
 
-	base := "amsg"
+	base := "bmsg"
+	var results []*pubsub.PublishResult
 	if data.External {
-		for i := 0; i < 111; i++ {
-			c.Topic("test-ratelimit").Publish(context.Background(), &pubsub.Message{Data: []byte(fmt.Sprintf(base+"-%v", i))}).Get(context.Background())
+		for i := 0; i < 300; i++ {
+			r := c.Topic("test-ratelimit").Publish(context.Background(), &pubsub.Message{Data: []byte(fmt.Sprintf(base+"-%v", i))})
+			results = append(results, r)
+		}
+		for _, r := range results {
+			r.Get(ctx)
 		}
 
 	} else {
