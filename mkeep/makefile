@@ -13,4 +13,4 @@ deploy:
 		--trigger-topic igtools-mkeep
 
 external-trigger:
-	gcloud alpha functions call mkeep --region asia-northeast1 --data '{"ExternalTrigger":true}'
+	gcloud alpha functions call mkeep --region asia-northeast1 --data '{"data":"eyJFeHRlcm5hbFRyaWdnZXIiOnRydWV9Cg=="}'
