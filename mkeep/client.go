@@ -257,10 +257,11 @@ func (c *Client) queueItem(item goinsta.Item) {
 
 }
 
-func (c *Client) download(msg Message) error {
+func (c *Client) download(msg Message) {
 	resp, err := c.ig.Client().Get(msg.Url)
 	if err != nil {
-		return fmt.Errorf("Download item %v failed: %v", msg.ItemID, err)
+		log.Printf("Download item %v failed: %vn", msg.ItemID, err)
+		return
 	}
 	defer resp.Body.Close()
 
@@ -269,7 +270,8 @@ func (c *Client) download(msg Message) error {
 	defer w.Close()
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
-		return fmt.Errorf("Upload item %v failed: %v", msg.ItemID, err)
+		log.Printf("Upload item %v failed: %v\n", msg.ItemID, err)
+		return
 	}
 
 	// update downlist
@@ -278,5 +280,8 @@ func (c *Client) download(msg Message) error {
 	}
 	c.downlist[msg.UserID][msg.ItemID] = struct{}{}
 
-	return c.save()
+	err = c.save()
+	if err != nil {
+		log.Println("Error saving: ", err)
+	}
 }

@@ -52,10 +52,11 @@ func Mkeep(ctx context.Context, psmsg pubsub.Message) error {
 		client.getFeeds(msg)
 	case ModeItem:
 		fmt.Println("Getting item ", msg.ItemID, msg.Ext, " for ", msg.Username)
-		return client.download(msg)
+		client.download(msg)
 	default:
 		return fmt.Errorf("Unknown msg mode: %v", msg.Mode)
 	}
+	return nil
 }
 
 var (
