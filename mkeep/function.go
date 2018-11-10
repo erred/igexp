@@ -48,10 +48,10 @@ func Mkeep(ctx context.Context, psmsg pubsub.Message) error {
 		fmt.Println("Getting all users")
 		return client.getUsers()
 	case ModeUser:
-		fmt.Println("Getting all feeds for ", msg.UserID)
+		fmt.Println("Getting all feeds for ", msg.Username)
 		return client.getFeeds(msg)
 	case ModeItem:
-		fmt.Println("Getting item ", msg.ItemID, " for ", msg.UserID)
+		fmt.Println("Getting item ", msg.ItemID, msg.Ext, " for ", msg.Username)
 		return client.download(msg)
 	default:
 		return fmt.Errorf("Unknown msg mode: %v", msg.Mode)
