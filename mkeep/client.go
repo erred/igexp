@@ -160,7 +160,7 @@ func (c *Client) getUserDoc(id int64) (UserDoc, error) {
 	// }
 	if err := c.dstore.Get(context.Background(), key, &udoc); err != nil {
 		if err == datastore.ErrNoSuchEntity {
-			_, err = c.dstore.Put(context.Background(), key, udoc)
+			_, err = c.dstore.Put(context.Background(), key, &udoc)
 			if err != nil {
 				return udoc, fmt.Errorf("Error creating userDoc for %v", id)
 			}
@@ -178,7 +178,7 @@ func (c *Client) getUsers() {
 		for _, user := range following.Users {
 			udoc, err := c.getUserDoc(user.ID)
 			if err != nil {
-				log.Println("Error getting user doc for ", user.ID, " ", user.Username)
+				log.Println("Error getting user doc for ", user.ID, " ", user.Username, ": ", err)
 				continue
 			}
 			if udoc.Feed || udoc.Story || udoc.Tag {
@@ -309,7 +309,7 @@ func (c *Client) download(msg Message) {
 	// update downlist
 	mdoc := MediaDoc{msg.UserID, msg.Username, msg.Ext, msg.Time}
 	key := datastore.NameKey("media", msg.ItemID, c.akey)
-	_, err = c.dstore.Put(context.Background(), key, mdoc)
+	_, err = c.dstore.Put(context.Background(), key, &mdoc)
 	// _, err = c.mediacol.Doc(msg.ItemID).Create(context.Background(), mdoc)
 	if err != nil {
 		log.Println("Error saving mediadoc: ", err)
