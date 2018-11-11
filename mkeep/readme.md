@@ -1,22 +1,41 @@
-# fwatch
+# mkeep
 
-keeps tracks of instagram follows
+downloads instagram feed/tags/media
 
 ## Development
 
-[goinsta](https://github.com/ahmdrz/goinsta) is forked to fix versioning issues with Go 1.11, vendor using `make` from `..`
+```
+(collection) Users
+    |- (doc) User1
+    |   - BlacklistFeed: false
+    |   - BlacklistStory: false
+    |   - BlacklistTag: true
+    `- (doc) User2
+        - BlacklistFeed: false
+        - BlacklistStory: false
+        - BlacklistTag: true
+(collection) Media
+    |- (doc) MediaID01
+    |   - User: UserID
+    |   - Date: Date
+    `- (doc) MediaID02
+        - User: UserID
+        - Date: Date
+```
 
 ## Deployment
 
 Cloud Functions Go - Pub/Sub trigger
+
 ```
-{"ExternalTrigger":1}
+{"Mode":0}
 ```
 
 ### Env Vars
 
 - `BUCKET` - Cloud storage bucket
-- `TOPIC`  - pubsub topic to use as task queue
+- `TOPIC` - pubsub topic to use as task queue
+- `FIRE` - firestore database
 
 ### Bootstrap
 

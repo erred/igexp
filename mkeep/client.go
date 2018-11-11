@@ -14,6 +14,7 @@ import (
 
 	"github.com/seankhliao/igtools/goinsta"
 
+	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
 )
@@ -37,12 +38,31 @@ type Downlist map[int64]map[string]struct{}
 
 // Client is a singleton of clients
 type Client struct {
-	bucket    *storage.BucketHandle
-	ig        *goinsta.Instagram
-	once      sync.Once
-	topic     *pubsub.Topic
-	downlist  Downlist
-	blacklist Blacklist
+	once sync.Once
+
+	bucket *storage.BucketHandle
+	dstore *datastore.Client
+
+	akey *datastore.Key
+	// usercol  *firestore.CollectionRef
+	// mediacol *firestore.CollectionRef
+	topic *pubsub.Topic
+	ig    *goinsta.Instagram
+
+	// downlist  Downlist
+	// blacklist Blacklist
+}
+
+// UserDoc stores blacklist info
+type UserDoc struct {
+	Feed  bool
+	Story bool
+	Tag   bool
+}
+
+// MediaDoc stores media info
+type MediaDoc struct {
+	User int64
 }
 
 func (c *Client) setup() {
@@ -55,6 +75,21 @@ func (c *Client) setup() {
 		panic(fmt.Errorf("Login Error: cloud storage failed: %v", err))
 	}
 	c.bucket = store.Bucket(os.Getenv(envBucket))
+
+	// firestore
+	// fire, err := firestore.NewClient(ctx, os.Getenv(envProject))
+	// if err != nil {
+	// 	panic(fmt.Errorf("Login Error: firestore failed: %v", err))
+	// }
+	// c.usercol = fire.Collection(os.Getenv(envFireUser))
+	// c.mediacol = fire.Collection(os.Getenv(envFireMedia))
+
+	// datastore
+	dstore, err := datastore.NewClient(ctx, os.Getenv(envProject))
+	if err != nil {
+		panic(fmt.Errorf("Login Error: datastore failed: %v", err))
+	}
+	c.akey = datastore.NameKey("igtools", "mkeep", nil)
 
 	// pubsub
 	psc, err := pubsub.NewClient(ctx, os.Getenv(envProject))
@@ -69,39 +104,10 @@ func (c *Client) setup() {
 		panic(fmt.Errorf("Login Error: import %v failed: %v", objGoinsta, err))
 	}
 	defer r.Close()
-
 	c.ig, err = goinsta.ImportReader(r)
 	if err != nil {
 		panic(fmt.Errorf("Import Error: %v", err))
 	}
-
-	// downlist
-	r, err = c.bucket.Object(objDownlist).NewReader(ctx)
-	switch err {
-	case nil:
-		defer r.Close()
-		if err := json.NewDecoder(r).Decode(&c.downlist); err != nil {
-			panic(fmt.Errorf("%v decode error: %v", objDownlist, err))
-		}
-	case storage.ErrObjectNotExist:
-		c.downlist = map[int64]map[string]struct{}{}
-	default:
-		panic(fmt.Errorf("%v reader error: %v", objDownlist, err))
-	}
-
-	// blacklist
-	r, err = c.bucket.Object(objBlacklist).NewReader(ctx)
-	switch err {
-	case nil:
-		defer r.Close()
-		if err := json.NewDecoder(r).Decode(&c.blacklist); err != nil {
-			panic(fmt.Errorf("%v decode error: %v", objBlacklist, err))
-		}
-	case storage.ErrObjectNotExist:
-	default:
-		panic(fmt.Errorf("%v reader error: %v", objBlacklist, err))
-	}
-
 	fmt.Println("successfully completed setup")
 }
 
@@ -117,37 +123,64 @@ func (c *Client) save() error {
 	}
 
 	// downlist
-	w = c.bucket.Object(objGoinsta).NewWriter(ctx)
-	defer w.Close()
-	if err := json.NewEncoder(w).Encode(c.downlist); err != nil {
-		return fmt.Errorf("downlist export failed: %v", err)
-	}
+	// w = c.bucket.Object(objGoinsta).NewWriter(ctx)
+	// defer w.Close()
+	// if err := json.NewEncoder(w).Encode(c.downlist); err != nil {
+	// 	return fmt.Errorf("downlist export failed: %v", err)
+	// }
 	return nil
 }
 
-func (c *Client) isBlacklisted(userID int64, feed string) bool {
-	list, ok := c.blacklist[userID]
-	if !ok {
-		return false
-	}
-	for _, it := range list {
-		if it == feed {
-			return true
+func (c *Client) getMediaExist(id string) bool {
+	// _, err := c.mediacol.Doc(id).Get(context.Background())
+	// if err != nil {
+	// 	if grpc.Code(err) == codes.NotFound {
+	// 		return false
+	// 	}
+	// 	log.Println("Unknown error getting media doc status for ", id, ": ", err)
+	// 	return false
+	// }
+	key := datastore.NameKey("media", id, c.akey)
+	var empty MediaDoc
+	if err := c.dstore.Get(context.Background(), key, &empty); err != nil {
+		if err == datastore.ErrNoSuchEntity {
+			return false
 		}
-	}
-	return false
-}
-
-func (c *Client) isDownloaded(userID int64, mediaID string) bool {
-	u, ok := c.downlist[userID]
-	if !ok {
-		return false
-	}
-	_, ok = u[mediaID]
-	if !ok {
+		log.Println("Unknown error getting media doc status for ", id, ": ", err)
 		return false
 	}
 	return true
+}
+
+func (c *Client) getUserDoc(id int64) (UserDoc, error) {
+	uid := strconv.FormatInt(id, 10)
+	udoc := UserDoc{true, true, true}
+	key := datastore.NameKey("user", uid, c.akey)
+	// dss, err := c.usercol.Doc(uid).Get(context.Background())
+	// if err != nil {
+	// 	if grpc.Code(err) == codes.NotFound {
+	// 		_, err = c.usercol.Doc(uid).Create(context.Background(), udoc)
+	// 		if err != nil {
+	// 			return udoc, fmt.Errorf("Error creating userDoc for %v", id)
+	// 		}
+	// 		return udoc, nil
+	// 	}
+	// 	return udoc, fmt.Errorf("Unkown error getUserDoc: %v", err)
+	// }
+	// if err := dss.DataTo(&udoc); err != nil {
+	// 	return udoc, fmt.Errorf("Unkown error getUserDoc: %v", err)
+	// }
+	if err := c.dstore.Get(context.Background(), key, &udoc); err != nil {
+		if err == datastore.ErrNoSuchEntity {
+			_, err = c.dstore.Put(context.Background(), key, udoc)
+			if err != nil {
+				return udoc, fmt.Errorf("Error creating userDoc for %v", id)
+			}
+			return udoc, nil
+		}
+		return udoc, fmt.Errorf("Unkown error getUserDoc: %v", err)
+	}
+	return udoc, nil
 }
 
 func (c *Client) getUsers() {
@@ -155,7 +188,12 @@ func (c *Client) getUsers() {
 	counter := 0
 	for following.Next() {
 		for _, user := range following.Users {
-			if !c.isBlacklisted(user.ID, "") {
+			udoc, err := c.getUserDoc(user.ID)
+			if err != nil {
+				log.Println("Error getting user doc for ", user.ID, " ", user.Username)
+				continue
+			}
+			if udoc.Feed || udoc.Story || udoc.Tag {
 				counter++
 				c.queueUser(user)
 			}
@@ -181,20 +219,26 @@ func (c *Client) getFeeds(msg Message) {
 		}
 	}
 
-	if !c.isBlacklisted(user.ID, blacklistStory) {
+	udoc, err := c.getUserDoc(user.ID)
+	if err != nil {
+		log.Println("Error getting user doc for ", user.ID, " ", user.Username)
+		return
+	}
+
+	if udoc.Story {
 		feed := user.Stories()
 		for feed.Next() {
 			c.getItems(feed.Items)
 		}
 	}
-	if !c.isBlacklisted(user.ID, blacklistFeed) {
+	if udoc.Feed {
 		feed := user.Feed()
 		for feed.Next() {
 			c.getItems(feed.Items)
 		}
 
 	}
-	if !c.isBlacklisted(user.ID, blacklistTag) {
+	if udoc.Tag {
 		feed, err := user.Tags([]byte{})
 		if err != nil {
 			log.Printf("get tagged for %v, %v error: %v", user.ID, user.Username, err)
@@ -212,7 +256,7 @@ func (c *Client) getItems(items []goinsta.Item) {
 		if len(item.CarouselMedia) != 0 {
 			breakout := false
 			for _, it := range item.CarouselMedia {
-				if c.isDownloaded(item.User.ID, it.ID) {
+				if c.getMediaExist(it.ID) {
 					breakout = true
 					break
 				}
@@ -224,7 +268,7 @@ func (c *Client) getItems(items []goinsta.Item) {
 			continue
 		}
 
-		if c.isDownloaded(item.User.ID, item.ID) {
+		if c.getMediaExist(item.ID) {
 			break
 		}
 		c.queueItem(item)
@@ -258,7 +302,7 @@ func (c *Client) queueItem(item goinsta.Item) {
 }
 
 func (c *Client) download(msg Message) {
-	resp, err := c.ig.Client().Get(msg.Url)
+	resp, err := c.ig.Client().Get(msg.URL)
 	if err != nil {
 		log.Printf("Download item %v failed: %vn", msg.ItemID, err)
 		return
@@ -275,10 +319,13 @@ func (c *Client) download(msg Message) {
 	}
 
 	// update downlist
-	if _, ok := c.downlist[msg.UserID]; !ok {
-		c.downlist[msg.UserID] = map[string]struct{}{}
+	mdoc := MediaDoc{msg.UserID}
+	key := datastore.NameKey("media", msg.ItemID, c.akey)
+	_, err = c.dstore.Put(context.Background(), key, mdoc)
+	// _, err = c.mediacol.Doc(msg.ItemID).Create(context.Background(), mdoc)
+	if err != nil {
+		log.Println("Error saving mediadoc: ", err)
 	}
-	c.downlist[msg.UserID][msg.ItemID] = struct{}{}
 
 	err = c.save()
 	if err != nil {

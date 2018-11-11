@@ -16,7 +16,9 @@ var (
 	client = Client{}
 
 	// names of environment variables
-	envBucket  = "BUCKET"
+	envBucket = "BUCKET"
+	// envFireUser  = "FIRE_USER"
+	// envFireMedia = "FIRE_MEDIA"
 	envTopic   = "TOPIC"
 	envProject = "GCP_PROJECT"
 
@@ -60,9 +62,11 @@ func Mkeep(ctx context.Context, psmsg pubsub.Message) error {
 }
 
 var (
-	// Modes for Message
-	ModeAll  = 0
+	// ModeAll triggers everything
+	ModeAll = 0
+	// ModeUser triggers for a user
 	ModeUser = 1
+	// ModeItem triggers for an item
 	ModeItem = 2
 )
 
@@ -73,7 +77,7 @@ type Message struct {
 	Username string
 	ItemID   string
 	Ext      string
-	Url      string
+	URL      string
 }
 
 func parseMessage(psmsg pubsub.Message) (Message, error) {
@@ -115,7 +119,7 @@ func newItemMessage(item goinsta.Item) Message {
 		Username: item.User.Username,
 		ItemID:   item.ID,
 		Ext:      path.Ext(u.Path),
-		Url:      link,
+		URL:      link,
 	}
 
 }
