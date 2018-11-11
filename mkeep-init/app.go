@@ -35,7 +35,7 @@ func F(w http.ResponseWriter, r *http.Request) {
 
 	for k := range bl {
 		key := datastore.NameKey("user", k, akey)
-		_, err := dstore.Put(context.Background(), key, &UserDoc{true, true, true})
+		_, err := dstore.Put(context.Background(), key, &UserDoc{false, false, false})
 		if err != nil {
 			log.Fatal(err)
 		}

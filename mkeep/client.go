@@ -19,23 +19,6 @@ import (
 	"cloud.google.com/go/storage"
 )
 
-// Blacklist of media feeds to keep
-// {
-//	userID : ["tagged", "feed"]
-// }
-// story, feed, tag
-var (
-	blacklistStory = "story"
-	blacklistFeed  = "feed"
-	blacklistTag   = "tag"
-)
-
-// Blacklist of media sources
-type Blacklist map[int64][]string
-
-// Downlist is a list of media we already have
-type Downlist map[int64]map[string]struct{}
-
 // Client is a singleton of clients
 type Client struct {
 	once sync.Once
@@ -54,6 +37,7 @@ type Client struct {
 }
 
 // UserDoc stores blacklist info
+// true = keep, false = don't
 type UserDoc struct {
 	Feed  bool
 	Story bool
