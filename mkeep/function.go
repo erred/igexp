@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/url"
 	"path"
+	"time"
 
 	"cloud.google.com/go/pubsub"
 	"github.com/seankhliao/igtools/goinsta"
@@ -78,6 +79,7 @@ type Message struct {
 	ItemID   string
 	Ext      string
 	URL      string
+	Time     time.Time
 }
 
 func parseMessage(psmsg pubsub.Message) (Message, error) {
@@ -120,6 +122,7 @@ func newItemMessage(item goinsta.Item) Message {
 		ItemID:   item.ID,
 		Ext:      path.Ext(u.Path),
 		URL:      link,
+		Time:     time.Unix(item.ImportedTakenAt, 0),
 	}
 
 }

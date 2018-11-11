@@ -11,6 +11,7 @@ import (
 	"path"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/seankhliao/igtools/goinsta"
 
@@ -47,6 +48,9 @@ type UserDoc struct {
 // MediaDoc stores media info
 type MediaDoc struct {
 	User int64
+	Name string
+	Ext  string
+	Time time.Time
 }
 
 func (c *Client) setup() {
@@ -303,7 +307,7 @@ func (c *Client) download(msg Message) {
 	}
 
 	// update downlist
-	mdoc := MediaDoc{msg.UserID}
+	mdoc := MediaDoc{msg.UserID, msg.Username, msg.Ext, msg.Time}
 	key := datastore.NameKey("media", msg.ItemID, c.akey)
 	_, err = c.dstore.Put(context.Background(), key, mdoc)
 	// _, err = c.mediacol.Doc(msg.ItemID).Create(context.Background(), mdoc)
