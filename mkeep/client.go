@@ -162,7 +162,7 @@ func (c *Client) getUserDoc(id int64) (UserDoc, error) {
 		if err == datastore.ErrNoSuchEntity {
 			_, err = c.dstore.Put(context.Background(), key, &udoc)
 			if err != nil {
-				return udoc, fmt.Errorf("Error creating userDoc for %v", id)
+				return udoc, fmt.Errorf("Error creating userDoc for %v: %v", id, err)
 			}
 			return udoc, nil
 		}
@@ -209,7 +209,7 @@ func (c *Client) getFeeds(msg Message) {
 
 	udoc, err := c.getUserDoc(user.ID)
 	if err != nil {
-		log.Println("Error getting user doc for ", user.ID, " ", user.Username)
+		log.Println("Error getting user doc for ", user.ID, " ", user.Username, ": ", err)
 		return
 	}
 
