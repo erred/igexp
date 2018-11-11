@@ -85,7 +85,7 @@ func (c *Client) setup() {
 	// c.mediacol = fire.Collection(os.Getenv(envFireMedia))
 
 	// datastore
-	dstore, err := datastore.NewClient(ctx, os.Getenv(envProject))
+	c.dstore, err = datastore.NewClient(ctx, os.Getenv(envProject))
 	if err != nil {
 		panic(fmt.Errorf("Login Error: datastore failed: %v", err))
 	}
