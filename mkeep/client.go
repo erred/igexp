@@ -170,7 +170,7 @@ func (c *Client) getUserDoc(id int64) (UserDoc, error) {
 	return udoc, nil
 }
 
-func (c *Client) getUsers() {
+func (c *Client) getUsers() error {
 	following := c.ig.Account.Following()
 	counter := 0
 	for following.Next() {
@@ -187,9 +187,13 @@ func (c *Client) getUsers() {
 		}
 	}
 	fmt.Println("getUsers queued ", counter, " users")
+	if counter == 0 {
+		return fmt.Errorf("queued nothing")
+	}
+	return nil
 }
 
-func (c *Client) getFeeds(msg Message) {
+func (c *Client) getFeeds(msg Message) error {
 	breakout := false
 	user := goinsta.User{}
 	following := c.ig.Account.Following()
@@ -209,7 +213,7 @@ func (c *Client) getFeeds(msg Message) {
 	udoc, err := c.getUserDoc(user.ID)
 	if err != nil {
 		log.Println("Error getting user doc for ", user.ID, " ", user.Username, ": ", err)
-		return
+		return fmt.Errorf("get user doc: %v", err)
 	}
 
 	if udoc.Story {
@@ -229,13 +233,13 @@ func (c *Client) getFeeds(msg Message) {
 		feed, err := user.Tags([]byte{})
 		if err != nil {
 			log.Printf("get tagged for %v, %v error: %v", user.ID, user.Username, err)
-			return
+			return fmt.Errorf("get tagged: %v", err)
 		}
 		for feed.Next() {
 			c.getItems(feed.Items)
 		}
 	}
-	return
+	return nil
 }
 
 func (c *Client) getItems(items []goinsta.Item) {
@@ -288,11 +292,11 @@ func (c *Client) queueItem(item goinsta.Item) {
 
 }
 
-func (c *Client) download(msg Message) {
+func (c *Client) download(msg Message) error {
 	resp, err := c.ig.Client().Get(msg.URL)
 	if err != nil {
 		log.Printf("Download item %v failed: %vn", msg.ItemID, err)
-		return
+		return fmt.Errorf("http.Get failed: %v", err)
 	}
 	defer resp.Body.Close()
 
@@ -302,7 +306,7 @@ func (c *Client) download(msg Message) {
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
 		log.Printf("Upload item %v failed: %v\n", msg.ItemID, err)
-		return
+		return fmt.Errorf("upload failed: %v", err)
 	}
 
 	// update downlist
@@ -312,10 +316,13 @@ func (c *Client) download(msg Message) {
 	// _, err = c.mediacol.Doc(msg.ItemID).Create(context.Background(), mdoc)
 	if err != nil {
 		log.Println("Error saving mediadoc: ", err)
+		return fmt.Errorf("failed update datastore")
 	}
 
 	err = c.save()
 	if err != nil {
 		log.Println("Error saving: ", err)
+		return fmt.Errorf("failed save client")
 	}
+	return nil
 }
