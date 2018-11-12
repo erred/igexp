@@ -121,7 +121,7 @@ func newItemMessage(item goinsta.Item, uid int64, uname string) Message {
 		ItemID:   item.ID,
 		Ext:      path.Ext(u.Path),
 		URL:      link,
-		Time:     time.Unix(item.DeviceTimestamp, 0),
+		Time:     time.Unix(int64(item.TakenAt), 0),
 	}
 
 }
