@@ -39,29 +39,28 @@ func F(w http.ResponseWriter, r *http.Request) {
 	// 	}
 	// }
 	// akey := datastore.NameKey("igtools", "mkeep", nil)
-
-	q := datastore.NewQuery("media").KeysOnly()
-	keys, err := dstore.GetAll(context.Background(), q, nil)
+	total, err := dstore.Count(ctx, datastore.NewQuery("media").KeysOnly())
 	if err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte("error: " + err.Error()))
 		return
 	}
-	for len(keys) > 500 {
-		err = dstore.DeleteMulti(context.Background(), keys[:500])
+	for i := 0; i < total/400+1; i++ {
+		q := datastore.NewQuery("media").KeysOnly().Limit(400)
+		keys, err := dstore.GetAll(context.Background(), q, nil)
 		if err != nil {
 			w.WriteHeader(500)
 			w.Write([]byte("error: " + err.Error()))
 			return
 		}
-		keys = keys[:500]
-	}
-	err = dstore.DeleteMulti(context.Background(), keys)
-	if err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte("error: " + err.Error()))
-		return
-	}
+		err = dstore.DeleteMulti(ctx, keys)
+		if err != nil {
+			w.WriteHeader(500)
+			w.Write([]byte("error: " + err.Error()))
+			return
+		}
+		w.Write([]byte("deleted 400\n"))
 
+	}
 	w.WriteHeader(200)
 }
