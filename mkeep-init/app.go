@@ -3,7 +3,6 @@ package f
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
@@ -32,12 +31,41 @@ func F(w http.ResponseWriter, r *http.Request) {
 		panic(fmt.Errorf("Login Error: datastore failed: %v", err))
 	}
 
-	for k := range bl {
-		key := datastore.NameKey("igtools-user", k, nil)
-		_, err := dstore.Put(context.Background(), key, &UserDoc{false, false, false})
-		if err != nil {
-			log.Fatal(err)
-		}
+	// for k := range bl {
+	// 	key := datastore.NameKey("igtools-user", k, nil)
+	// 	_, err := dstore.Put(context.Background(), key, &UserDoc{false, false, false})
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// }
+	// akey := datastore.NameKey("igtools", "mkeep", nil)
+	q := datastore.NewQuery("user").KeysOnly()
+	keys, err := dstore.GetAll(context.Background(), q, nil)
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte("error: " + err.Error()))
+		return
 	}
+	err = dstore.DeleteMulti(context.Background(), keys)
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte("error: " + err.Error()))
+		return
+	}
+
+	q = datastore.NewQuery("media").KeysOnly()
+	keys, err = dstore.GetAll(context.Background(), q, nil)
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte("error: " + err.Error()))
+		return
+	}
+	err = dstore.DeleteMulti(context.Background(), keys)
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte("error: " + err.Error()))
+		return
+	}
+
 	w.WriteHeader(200)
 }
