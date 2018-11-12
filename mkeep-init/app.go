@@ -31,10 +31,9 @@ func F(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(fmt.Errorf("Login Error: datastore failed: %v", err))
 	}
-	akey := datastore.NameKey("igtools", "mkeep", nil)
 
 	for k := range bl {
-		key := datastore.NameKey("user", k, akey)
+		key := datastore.NameKey("igtools-user", k, nil)
 		_, err := dstore.Put(context.Background(), key, &UserDoc{false, false, false})
 		if err != nil {
 			log.Fatal(err)

@@ -77,7 +77,6 @@ func (c *Client) setup() {
 	if err != nil {
 		panic(fmt.Errorf("Login Error: datastore failed: %v", err))
 	}
-	c.akey = datastore.NameKey("igtools", "mkeep", nil)
 
 	// pubsub
 	psc, err := pubsub.NewClient(ctx, os.Getenv(envProject))
@@ -128,7 +127,7 @@ func (c *Client) getMediaExist(id string) bool {
 	// 	log.Println("Unknown error getting media doc status for ", id, ": ", err)
 	// 	return false
 	// }
-	key := datastore.NameKey("media", id, c.akey)
+	key := datastore.NameKey("igtools-media", id, nil)
 	var empty MediaDoc
 	if err := c.dstore.Get(context.Background(), key, &empty); err != nil {
 		if err == datastore.ErrNoSuchEntity {
@@ -143,7 +142,7 @@ func (c *Client) getMediaExist(id string) bool {
 func (c *Client) getUserDoc(id int64) (UserDoc, error) {
 	uid := strconv.FormatInt(id, 10)
 	udoc := UserDoc{true, true, true}
-	key := datastore.NameKey("user", uid, c.akey)
+	key := datastore.NameKey("igtools-user", uid, nil)
 	// dss, err := c.usercol.Doc(uid).Get(context.Background())
 	// if err != nil {
 	// 	if grpc.Code(err) == codes.NotFound {
