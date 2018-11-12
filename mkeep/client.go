@@ -219,13 +219,13 @@ func (c *Client) getFeeds(msg Message) error {
 	if udoc.Story {
 		feed := user.Stories()
 		for feed.Next() {
-			c.getItems(feed.Items)
+			c.getItems(feed.Items, user.ID, user.Username)
 		}
 	}
 	if udoc.Feed {
 		feed := user.Feed()
 		for feed.Next() {
-			c.getItems(feed.Items)
+			c.getItems(feed.Items, user.ID, user.Username)
 		}
 
 	}
@@ -236,13 +236,13 @@ func (c *Client) getFeeds(msg Message) error {
 			return fmt.Errorf("get tagged: %v", err)
 		}
 		for feed.Next() {
-			c.getItems(feed.Items)
+			c.getItems(feed.Items, user.ID, user.Username)
 		}
 	}
 	return nil
 }
 
-func (c *Client) getItems(items []goinsta.Item) {
+func (c *Client) getItems(items []goinsta.Item, uid int64, uname string) {
 	for _, item := range items {
 		if len(item.CarouselMedia) != 0 {
 			breakout := false
@@ -251,7 +251,7 @@ func (c *Client) getItems(items []goinsta.Item) {
 					breakout = true
 					break
 				}
-				c.queueItem(it)
+				c.queueItem(it, uid, uname)
 			}
 			if breakout {
 				break
@@ -262,7 +262,7 @@ func (c *Client) getItems(items []goinsta.Item) {
 		if c.getMediaExist(item.ID) {
 			break
 		}
-		c.queueItem(item)
+		c.queueItem(item, uid, uname)
 	}
 }
 
@@ -279,9 +279,9 @@ func (c *Client) queueUser(user goinsta.User) {
 
 }
 
-func (c *Client) queueItem(item goinsta.Item) {
+func (c *Client) queueItem(item goinsta.Item, uid int64, uname string) {
 	buf := bytes.Buffer{}
-	if err := json.NewEncoder(&buf).Encode(newItemMessage(item)); err != nil {
+	if err := json.NewEncoder(&buf).Encode(newItemMessage(item, uid, uname)); err != nil {
 		log.Println("queueItem encode: ", err)
 	}
 

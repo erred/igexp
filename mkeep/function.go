@@ -98,7 +98,7 @@ func newUserMessage(user goinsta.User) Message {
 
 }
 
-func newItemMessage(item goinsta.Item) Message {
+func newItemMessage(item goinsta.Item, uid int64, uname string) Message {
 	var link string
 	if len(item.Images.Versions) > 0 {
 		link = item.Images.GetBest()
@@ -116,12 +116,12 @@ func newItemMessage(item goinsta.Item) Message {
 	}
 	return Message{
 		Mode:     ModeItem,
-		UserID:   item.User.ID,
-		Username: item.User.Username,
+		UserID:   uid,
+		Username: uname,
 		ItemID:   item.ID,
 		Ext:      path.Ext(u.Path),
 		URL:      link,
-		Time:     time.Unix(item.ImportedTakenAt, 0),
+		Time:     time.Unix(item.DeviceTimestamp, 0),
 	}
 
 }
